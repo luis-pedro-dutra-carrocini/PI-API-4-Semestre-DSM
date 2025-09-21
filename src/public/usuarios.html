@@ -61,12 +61,12 @@
             <li><a href="index.html">Voltar ao Menu</a></li>
         </ul>
         <ul>
-            <li><a href="#post-criar">POST /usuarios</a> - Criar usuário</li>
-            <li><a href="#get-me">GET /usuarios/me</a> - Obter usuário logado</li>
-            <li><a href="#put">PUT /usuarios/:id</a> - Atualizar usuário</li>
-            <li><a href="#delete">DELETE /usuarios</a> - Excluir usuário</li>
-            <li><a href="#login">POST /login</a> - Login de usuário</li>
-            <li><a href="#logout">POST /logout</a> - Logout de usuário</li>
+            <li><a href="#post-criar">POST - /usuarios/</a> - Criar usuário</li>
+            <li><a href="#get-me">GET - /usuarios/id/</a> - Obter usuário logado</li>
+            <li><a href="#put">PUT - /usuarios/</a> - Atualizar usuário</li>
+            <li><a href="#delete">DELETE - /usuarios/</a> - Excluir usuário</li>
+            <li><a href="#login">POST - usuarios/login/</a> - Login de usuário</li>
+            <li><a href="#logout">POST - usuarios/logout/</a> - Logout de usuário</li>
         </ul>
     </div>
 
@@ -78,7 +78,7 @@
     </div>
 
     <div class="section" id="post-criar">
-        <h2>📤 POST /usuarios</h2>
+        <h2>📤 POST - /usuarios/</h2>
         <p>Cria um novo usuário no sistema.</p>
         <h3>Corpo da requisição:</h3>
         <pre>{
@@ -102,8 +102,8 @@
     </div>
 
     <div class="section" id="get-me">
-        <h2>📥 GET /usuarios/me</h2>
-        <p>Busca os dados do próprio usuário logado. Requer <a href="#autenticacao">autenticação de sessão</a>. Este endpoint ignora qualquer ID ou e-mail na URL e usa o ID do token de autenticação para buscar as informações.</p>
+        <h2>📥 GET - /usuarios/id/</h2>
+        <p>Busca os dados do próprio usuário logado. Requer <a href="#autenticacao">autenticação</a>. Este endpoint ignora qualquer ID ou e-mail na URL e usa o ID do token de autenticação para buscar as informações.</p>
         <h3>Corpo da requisição:</h3>
         <p>Não há corpo de requisição.</p>
         <h3>Respostas:</h3>
@@ -129,8 +129,8 @@
     </div>
 
     <div class="section" id="put">
-        <h2>✏️ PUT /usuarios/:id</h2>
-        <p>Atualiza os dados do usuário logado. Requer <a href="#autenticacao">autenticação de sessão</a>. O ID na URL é ignorado, a atualização é feita com base no usuário logado na sessão.</p>
+        <h2>✏️ PUT - /usuarios/</h2>
+        <p>Atualiza os dados do usuário logado. Requer <a href="#autenticacao">autenticaçãoo</a>. O ID na URL é ignorado, a atualização é feita com base no usuário logado, de acordo com o Token JWT.</p>
         <h3>Corpo da requisição:</h3>
         <pre>{
     "UsuarioNome": "João Silva",
@@ -157,8 +157,8 @@
     </div>
 
     <div class="section" id="delete">
-        <h2>🗑 DELETE /usuarios</h2>
-        <p>Remove o usuário do sistema. Requer <a href="#autenticacao">autenticação de sessão</a> e a senha do usuário no corpo da requisição para confirmação. O registro é deletado do banco de dados.</p>
+        <h2>🗑 DELETE - /usuarios/</h2>
+        <p>Remove o usuário do sistema. Requer <a href="#autenticacao">autenticação</a> e a senha do usuário no corpo da requisição para confirmação. O registro e seus relacionais são deletados do banco de dados.</p>
         <h3>Corpo da requisição:</h3>
         <pre>{
     "UsuarioSenha": "SenhaParaConfirmarExclusao"
@@ -176,7 +176,7 @@
     </div>
 
     <div class="section" id="login">
-        <h2>🔐 POST /login</h2>
+        <h2>🔐 POST - /login/</h2>
         <p>Realiza o login do usuário e retorna tokens de autenticação.</p>
         <h3>Corpo da requisição:</h3>
         <pre>{
@@ -205,8 +205,8 @@
     </div>
 
     <div class="section" id="logout">
-        <h2>🚪 POST /logout</h2>
-        <p>Encerra a sessão do usuário revogando o token de refresh, que não poderá mais ser usado para obter novos tokens de acesso.</p>
+        <h2>🚪 POST - /logout/</h2>
+        <p>Encerra a sessão do usuário e revoda o token de refresh, que não poderá mais ser usado para obter novos tokens de acesso.</p>
         <h3>Corpo da requisição:</h3>
         <pre>{
     "refreshToken": "eyJ..."

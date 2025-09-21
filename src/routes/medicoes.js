@@ -13,8 +13,6 @@ const r = Router();
 
 r.post('/', criarMedicao);
 /*
-    "MochilaCodigo": "Anunufnsw",
-    "MochilaSenha": "a",
     "MedicaoPeso": 8.3,
     "MedicaoLocal": "esquerda"
 */
@@ -26,7 +24,7 @@ r.get('/mensal/:ano/:mes/:mochila', obterRelatorioMensal);
 r.get('/anual/:ano/:mochila', obterRelatorioAnual);
 
 r.get('/dia/:data/:mochila', obterRelatorioDia);
-
+    
 r.get('/diaMaisMenosPeso/:mochila', obterDiaMaisMenosPeso);
 
 r.get('/periodo/:inicio/:fim/:mochila', obterMedicoesPorPeriodo);

@@ -81,14 +81,14 @@
             <li><a href="index.html">Voltar ao Menu</a></li>
         </ul>
         <ul>
-            <li><a href="#post-criar-medicao">POST /medicoes/criar</a> - Criar medição (requer token de mochila)</li>
-            <li><a href="#get-relatorio-semanal">GET /medicoes/relatorio/semanal/:mochila</a> - Relatório semanal</li>
-            <li><a href="#get-relatorio-mensal">GET /medicoes/relatorio/mensal/:mochila/:ano/:mes</a> - Relatório mensal
+            <li><a href="#post-criar-medicao">POST - /medicoes/</a> - Criar medição (requer token de mochila)</li>
+            <li><a href="#get-relatorio-semanal">GET -  /medicoes/semanal/:mochila</a> - Relatório semanal</li>
+            <li><a href="#get-relatorio-mensal">GET - /medicoes/mensal/:ano/:mes/:mochila</a> - Relatório mensal
             </li>
-            <li><a href="#get-relatorio-anual">GET /medicoes/relatorio/anual/:mochila/:ano</a> - Relatório anual</li>
-            <li><a href="#get-relatorio-dia">GET /medicoes/relatorio/dia/:mochila/:data</a> - Relatório diário</li>
-            <li><a href="#get-relatorio-peso">GET /medicoes/relatorio/peso/:mochila</a> - Dia com mais e menos peso</li>
-            <li><a href="#get-relatorio-periodo">GET /medicoes/relatorio/periodo/:mochila/:inicio/:fim</a> - Relatório
+            <li><a href="#get-relatorio-anual">GET - /medicoes/anual/:ano/:mochila</a> - Relatório anual</li>
+            <li><a href="#get-relatorio-dia">GET - /medicoes/dia/:data/:mochila</a> - Relatório diário</li>
+            <li><a href="#get-relatorio-peso">GET - /medicoes/diaMaisMenosPeso/:mochila</a> - Dia com mais e menos peso</li>
+            <li><a href="#get-relatorio-periodo">GET - /medicoes/periodo/:inicio/:fim/:mochila</a> - Relatório
                 por período</li>
         </ul>
     </div>
@@ -102,12 +102,12 @@
     </div>
 
     <div class="section" id="post-criar-medicao">
-        <h2>📝 POST /medicoes/criar</h2>
-        <p>Registra uma nova medição de peso para uma mochila específica, geralmente enviada por um dispositivo IoT. A validação inclui o status de uso da mochila e o limite de peso do usuário.</p>
+        <h2>📝 POST - /medicoes/</h2>
+        <p>Registra uma nova medição de peso para uma mochila específica, enviada por um dispositivo IoT. A validação inclui o status de uso da mochila e o limite de peso do usuário. Requer <a href="#autenticacao">autenticação</a> da IoT.</p>
         <h3>Corpo da requisição:</h3>
         <pre>{
     "MedicaoPeso": 12.5,
-    "MedicaoLocal": "centro"
+    "MedicaoLocal": "esquerda" // ou "direita" ou "centro" ou "ambos"
 }</pre>
         <h3>Respostas:</h3>
         <ul>
@@ -122,8 +122,8 @@
     </div>
 
     <div class="section" id="get-relatorio-semanal">
-        <h2>🗓️ GET /medicoes/relatorio/semanal/:mochila</h2>
-        <p>Retorna todas as medições registradas para uma mochila específica nos últimos 7 dias. Requer autenticação de sessão do usuário.</p>
+        <h2>🗓️ GET - /medicoes/semanal/:mochila</h2>
+        <p>Retorna todas as medições registradas para uma mochila específica nos últimos 7 dias. Requer <a href="#autenticacao">autenticação</a> de sessão do usuário.</p>
         <h3>Parâmetros de URL:</h3>
         <pre>/medicoes/relatorio/semanal/mochila_codigo_exemplo</pre>
         <h3>Respostas:</h3>
@@ -151,8 +151,8 @@
     </div>
 
     <div class="section" id="get-relatorio-mensal">
-        <h2>📅 GET /medicoes/relatorio/mensal/:mochila/:ano/:mes</h2>
-        <p>Retorna todas as medições registradas para uma mochila em um mês e ano específicos. Requer autenticação de sessão do usuário.</p>
+        <h2>📅 GET - /medicoes/mensal/:ano/:mes/:mochila</h2>
+        <p>Retorna todas as medições registradas para uma mochila em um mês e ano específicos. Requer <a href="#autenticacao">autenticação</a> de sessão do usuário.</p>
         <h3>Parâmetros de URL:</h3>
         <pre>/medicoes/relatorio/mensal/mochila_codigo_exemplo/2025/08</pre>
         <h3>Respostas:</h3>
@@ -169,8 +169,8 @@
     </div>
 
     <div class="section" id="get-relatorio-anual">
-        <h2>📈 GET /medicoes/relatorio/anual/:mochila/:ano</h2>
-        <p>Retorna todas as medições registradas para uma mochila em um ano específico. Requer autenticação de sessão do usuário.</p>
+        <h2>📈 GET - /medicoes/anual/:ano/:mochila</h2>
+        <p>Retorna todas as medições registradas para uma mochila em um ano específico. Requer <a href="#autenticacao">autenticação</a> de sessão do usuário.</p>
         <h3>Parâmetros de URL:</h3>
         <pre>/medicoes/relatorio/anual/mochila_codigo_exemplo/2025</pre>
         <h3>Respostas:</h3>
@@ -187,8 +187,8 @@
     </div>
 
     <div class="section" id="get-relatorio-dia">
-        <h2>☀️ GET /medicoes/relatorio/dia/:mochila/:data</h2>
-        <p>Retorna todas as medições registradas para uma mochila em um dia específico. Requer autenticação de sessão do usuário.</p>
+        <h2>☀️ GET - /medicoes/dia/:data/:mochila</h2>
+        <p>Retorna todas as medições registradas para uma mochila em um dia específico. Requer <a href="#autenticacao">autenticação</a> de sessão do usuário.</p>
         <h3>Parâmetros de URL:</h3>
         <pre>/medicoes/relatorio/dia/mochila_codigo_exemplo/2025-08-10</pre>
         <h3>Respostas:</h3>
@@ -205,8 +205,8 @@
     </div>
 
     <div class="section" id="get-relatorio-peso">
-        <h2>⚖️ GET /medicoes/relatorio/peso/:mochila</h2>
-        <p>Encontra o dia com o maior e o menor peso registrado para uma mochila. Requer autenticação de sessão do usuário.</p>
+        <h2>⚖️ GET - /medicoes/diaMaisMenosPeso/:mochila</h2>
+        <p>Encontra o dia com o maior e o menor peso registrado para uma mochila. Requer <a href="#autenticacao">autenticação</a> de sessão do usuário.</p>
         <h3>Parâmetros de URL:</h3>
         <pre>/medicoes/relatorio/peso/mochila_codigo_exemplo</pre>
         <h3>Respostas:</h3>
@@ -228,8 +228,8 @@
     </div>
 
     <div class="section" id="get-relatorio-periodo">
-        <h2>🕰️ GET /medicoes/relatorio/periodo/:mochila/:inicio/:fim</h2>
-        <p>Retorna todas as medições para uma mochila dentro de um intervalo de datas informado. Requer autenticação de sessão do usuário.</p>
+        <h2>🕰️ GET - /medicoes/periodo/:inicio/:fim/:mochila</h2>
+        <p>Retorna todas as medições para uma mochila dentro de um intervalo de datas informado. Requer <a href="#autenticacao">autenticação</a> de sessão do usuário.</p>
         <h3>Parâmetros de URL:</h3>
         <pre>/medicoes/relatorio/periodo/mochila_codigo_exemplo/2025-08-01/2025-08-15</pre>
         <h3>Respostas:</h3>

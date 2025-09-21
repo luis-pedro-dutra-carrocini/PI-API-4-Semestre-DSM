@@ -247,7 +247,7 @@ export async function listarAlertasUsuario(req, res) {
       return res.status(404).json({ error: "Usuário não encontrado" });
     }
 
-    const { AlertaStatus } = req.body;
+    const AlertaStatus = req.params.status;;
 
     if (!AlertaStatus || !["Enviar", "Enviado", "Lido"].includes(AlertaStatus)) {
       return res.status(400).json({ error: "Status de alerta inválido. Deve ser 'Enviar', 'Enviado' ou 'Lido'" });

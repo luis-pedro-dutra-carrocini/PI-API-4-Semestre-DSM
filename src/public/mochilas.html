@@ -54,7 +54,7 @@
 <body>
     <h1>🎒 API - Mochilas</h1>
     <p>Esta é a documentação da API relacionada às mochilas. Todos os endpoints exigem autenticação de administrador,
-        exceto a busca e o login.</p>
+        exceto a busca e o login (que será para o IoT).</p>
 
     <div class="section" id="endpoints">
         <h2>🔗 Endpoints</h2>
@@ -62,11 +62,12 @@
             <li><a href="index.html">Voltar ao Menu</a></li>
         </ul>
         <ul>
-            <li><a href="#post">POST /mochilas</a> - Criar mochila</li>
-            <li><a href="#get-codigo">GET /mochilas/:codigo</a> - Buscar mochila por código</li>
-            <li><a href="#put">PUT /mochilas</a> - Atualizar mochila</li>
-            <li><a href="#delete">DELETE /mochilas</a> - Excluir mochila (desativar)</li>
-            <li><a href="#login">POST /loginMochila</a> - Login da mochila (IoT)</li>
+            <li><a href="#post">POST - /mochilas/</a> - Criar mochila</li>
+            <li><a href="#get-codigo">GET - /mochilas/codigo/:codigo</a> - Buscar mochila por código</li>
+            <li><a href="#put">PUT - /mochilas/</a> - Atualizar mochila</li>
+            <li><a href="#delete">DELETE - /mochilas/</a> - Excluir mochila (desativar)</li>
+            <li><a href="#login">POST - /loginMochila/</a> - Login da mochila (IoT)</li>
+            <li><a href="#put-status">PUT - /mochilas/status/s</a> - Alterar status da mochila</li>
         </ul>
     </div>
 
@@ -122,7 +123,7 @@
     </div>
 
     <div class="section" id="put">
-        <h2>✏️ PUT /mochilas</h2>
+        <h2>✏️ PUT /mochilas/</h2>
         <p>Atualiza os dados de uma mochila. Requer autenticação de administrador e a senha de alteração. O Código é
             obrigatório no corpo da requisição.</p>
         <h3>Corpo da requisição:</h3>
@@ -153,7 +154,7 @@
     </div>
 
     <div class="section" id="delete">
-        <h2>🗑 DELETE /mochilas</h2>
+        <h2>🗑 DELETE /mochilas/</h2>
         <p>Exclui uma mochila, alterando seu status para "Inativo". Requer autenticação de administrador e a senha de
             exclusão. O Código é obrigatório no corpo da requisição.</p>
         <h3>Corpo da requisição:</h3>
@@ -176,7 +177,7 @@
     </div>
 
     <div class="section" id="login">
-        <h2>🔑 POST /loginMochila</h2>
+        <h2>🔑 POST /loginMochila/</h2>
         <p>Autentica uma mochila (dispositivo IoT) usando uma assinatura digital para emitir um token de acesso e um de
             atualização.</p>
         <h3>Corpo da requisição:</h3>
@@ -193,6 +194,32 @@
             <li>`401 Unauthorized`: `{ "ok": false, "message": "Mochila não encontrada ou inativa." }` ou `{ "ok":
                 false, "message": "Assinatura inválida. Autenticação falhou." }`</li>
             <li>`500 Internal Server Error`: `{ "error": "Erro interno do servidor." }`</li>
+        </ul>
+        <a href="#endpoints" class="back-link">⬅ Voltar para Endpoints</a>
+    </div>
+
+    <div class="section" id="put-status">
+        <h2>🔄 PUT - /mochilas/status/s</h2>
+        <p>Altera o status de uma mochila para 'Ativo' ou 'Produção'. Requer autenticação de administrador e senhas
+            específicas para confirmação.</p>
+        <h3>Corpo da requisição:</h3>
+        <pre>{
+    "MochilaCodigo": "ABC123XYZ",
+    "MochilaStatus": "Ativo",
+    "AdminEmail": "admin@email.com",
+    "passwordAdmin": "SenhaDoAdmin",
+    "password": "SenhaParaAlterarStatus"
+}</pre>
+        <h3>Respostas:</h3>
+        <ul>
+            <li>`200 OK`: `{ "ok": true, "message": "Status da mochila alterado com sucesso" }`</li>
+            <li>`400 Bad Request`: `{ "error": "Código da mochila é inválido" }` ou `{ "error": "Status da mochila
+                inválido. Status permitidos ['Ativo', 'Produção']" }`</li>
+            <li>`403 Forbidden`: `{ "error": "Senhas e e-mail obrigatórios para a alteração de status" }` ou `{ "error":
+                "Senha incorreta" }`</li>
+            <li>`404 Not Found`: `{ "error": "Administrador não encontrado" }` ou `{ "error": "Mochila não encontrada ou
+                já excluída" }`</li>
+            <li>`500 Internal Server Error`: `{ "error": "Erro ao alterar status da mochila" }`</li>
         </ul>
         <a href="#endpoints" class="back-link">⬅ Voltar para Endpoints</a>
     </div>

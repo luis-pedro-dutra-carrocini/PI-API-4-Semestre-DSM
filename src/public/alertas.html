@@ -81,10 +81,10 @@
             <li><a href="index.html">Voltar ao Menu</a></li>
         </ul>
         <ul>
-            <li><a href="#get-id">GET /alertas/:id</a> - Obter alerta por ID</li>
-            <li><a href="#put-atualizar">PUT /alertas/:id</a> - Atualizar alerta (alterar status)</li>
-            <li><a href="#get-usuario">POST /alertas/usuario</a> - Listar alertas do usuário</li>
-            <li><a href="#delete-id">DELETE /alertas/:id</a> - Deletar alerta</li>
+            <li><a href="#get-id">GET - /alertas/:id</a> - Obter alerta por ID</li>
+            <li><a href="#put-atualizar">PUT - /alertas/:id</a> - Atualizar alerta (alterar status)</li>
+            <li><a href="#get-usuario">POST - /alertas/usuario</a> - Listar alertas do usuário</li>
+            <li><a href="#delete-id">DELETE - /alertas/:id</a> - Deletar alerta</li>
         </ul>
     </div>
 
@@ -97,8 +97,8 @@
     </div>
 
     <div class="section" id="get-id">
-        <h2>🔎 GET /alertas/:id</h2>
-        <p>Obtém os detalhes de um alerta específico pelo seu ID. Requer Token de autenticação, garantindo que
+        <h2>🔎 GET - /alertas/:id</h2>
+        <p>Obtém os detalhes de um alerta específico pelo seu ID. Requer <a href="#autenticacao">autenticação</a>, garantindo que
             apenas o dono do alerta possa visualizá-lo.</p>
         <h3>Parâmetros de URL:</h3>
         <pre>/alertas/456</pre>
@@ -115,8 +115,8 @@
     </div>
 
     <div class="section" id="put-atualizar">
-        <h2>🔄 PUT /alertas/:id</h2>
-        <p>Atualiza o status de um alerta existente. Apenas o status pode ser alterado. Requer Token de autenticação.
+        <h2>🔄 PUT - /alertas/:id</h2>
+        <p>Atualiza o status de um alerta existente. Apenas o status pode ser alterado. Requer <a href="#autenticacao">autenticação</a>.
         </p>
         <h3>Parâmetros de URL:</h3>
         <pre>/alertas/456</pre>
@@ -138,8 +138,8 @@
     </div>
 
     <div class="section" id="get-usuario">
-        <h2>👤 POST /alertas/usuario</h2>
-        <p>Lista todos os alertas de um usuário logado, filtrados pelo status informado. Requer Token de autenticação.
+        <h2>👤 GET - /alertas/usuario/:status</h2>
+        <p>Lista todos os alertas de um usuário logado, filtrados pelo status informado. Requer <a href="#autenticacao">autenticação</a>.
         </p>
         <h3>Corpo da requisição:</h3>
         <pre>{
@@ -160,7 +160,7 @@
 
     <div class="section" id="delete-id">
         <h2>❌ DELETE /alertas/:id</h2>
-        <p>Deleta um alerta específico pelo seu ID. Requer Token de autenticação, garantindo que apenas o
+        <p>Deleta um alerta específico pelo seu ID. Requer <a href="#autenticacao">autenticação</a>, garantindo que apenas o
             dono do alerta possa deletá-lo.</p>
         <h3>Parâmetros de URL:</h3>
         <pre>/alertas/456</pre>

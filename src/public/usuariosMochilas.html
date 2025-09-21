@@ -61,11 +61,11 @@
             <li><a href="index.html">Voltar ao Menu</a></li>
         </ul>
         <ul>
-            <li><a href="#get-usuario">GET /mochilas/usuario</a> - Obter mochilas do usuário</li>
-            <li><a href="#post-vincular">POST /mochilas/vincular-mochila</a> - Vincular mochila a usuário</li>
-            <li><a href="#post-assumir-uso">POST /mochilas/assumir-uso</a> - Assumir uso de mochila</li>
-            <li><a href="#post-encerrar-app">POST /mochilas/encerrar-uso-app</a> - Encerrar uso via app</li>
-            <li><a href="#post-encerrar-iot">POST /mochilas/encerrar-uso-iot</a> - Encerrar uso via IOT</li>
+            <li><a href="#get-usuario">GET - /mochilas/usuario/</a> - Obter mochilas do usuário</li>
+            <li><a href="#post-vincular">POST - /mochilas/vincular-mochila/</a> - Vincular mochila a usuário</li>
+            <li><a href="#post-assumir-uso">POST - /mochilas/assumir-uso/</a> - Assumir uso de mochila</li>
+            <li><a href="#post-encerrar-app">POST - /mochilas/encerrar-uso-app/</a> - Encerrar uso via app</li>
+            <li><a href="#post-encerrar-iot">POST - /mochilas/encerrar-uso-iot/</a> - Encerrar uso via IOT</li>
         </ul>
     </div>
 
@@ -77,7 +77,7 @@
     </div>
 
     <div class="section" id="get-usuario">
-        <h2>📥 GET /mochilas/usuario</h2>
+        <h2>📥 GET - /mochilas/usuario/</h2>
         <p>Obtém todas as mochilas vinculadas ao usuário logado, com informações sobre o status de uso e período. Requer <a href="#autenticacao">autenticação</a>.</p>
         <h3>Corpo da requisição:</h3>
         <p>Não há corpo de requisição.</p>
@@ -106,7 +106,7 @@
     </div>
 
     <div class="section" id="post-vincular">
-        <h2>🔗 POST /mochilas/vincular-mochila</h2>
+        <h2>🔗 POST - /mochilas/vincular-mochila/</h2>
         <p>Vincula uma mochila existente ao usuário logado, usando o código da mochila e um apelido para identificação. Requer <a href="#autenticacao">autenticação</a>.</p>
         <h3>Corpo da requisição:</h3>
         <pre>{
@@ -127,7 +127,7 @@
     </div>
 
     <div class="section" id="post-assumir-uso">
-        <h2>▶️ POST /mochilas/assumir-uso</h2>
+        <h2>▶️ POST - /mochilas/assumir-uso/</h2>
         <p>Permite que o usuário logado assuma o uso de uma mochila, alterando seu status para "Usando". Requer <a href="#autenticacao">autenticação</a>.</p>
         <h3>Corpo da requisição:</h3>
         <pre>{
@@ -147,7 +147,7 @@
     </div>
 
     <div class="section" id="post-encerrar-app">
-        <h2>⏹️ POST /mochilas/encerrar-uso-app</h2>
+        <h2>⏹️ POST - /mochilas/encerrar-uso-app/</h2>
         <p>Encerra o uso de uma mochila que está em status "Usando" ou "Último a Usar" para o usuário logado. Requer <a href="#autenticacao">autenticação</a>.</p>
         <h3>Corpo da requisição:</h3>
         <pre>{
@@ -166,9 +166,9 @@
         <a href="#endpoints" class="back-link">⬅ Voltar para Endpoints</a>
     </div>
 
-    <div class="section" id="post-encerrar-iot">
-        <h2>🔌 POST /mochilas/encerrar-uso-iot</h2>
-        <p>Encerra o uso de uma mochila por meio do dispositivo IoT, alterando o status para "Último a Usar". Requer autenticação específica da mochila (IoT), que é enviada via token no cabeçalho da requisição. <br><strong>Observação:</strong> Este endpoint não utiliza a autenticação de usuário padrão.</p>
+    <div class="section" id="post-encerrar-iot">    
+        <h2>🔌 POST - /mochilas/encerrar-uso-iot/</h2>
+        <p>Encerra o uso de uma mochila por meio do dispositivo IoT, alterando o status para "Último a Usar". Requer autenticação específica da mochila (IoT), que é enviada via token no cabeçalho da requisição. Requer também <a href="#autenticacao">autenticação</a> porém da IoT, que segue a mesma estrutura do JWT.</p>
         <h3>Corpo da requisição:</h3>
         <p>Não há corpo de requisição, a autenticação é feita via token JWT da mochila.</p>
         <h3>Respostas:</h3>

@@ -61,8 +61,8 @@
             <li><a href="index.html">Voltar ao Menu</a></li>
         </ul>
         <ul>
-            <li><a href="#get-validar">GET /validar-token</a> - Validar Token</li>
-            <li><a href="#post-refresh">POST /refresh-token</a> - Renovar Token de Acesso</li>
+            <li><a href="#get-validar">GET - /validarToken/</a> - Validar Token</li>
+            <li><a href="#post-refresh">POST - /refresh/</a> - Renovar Token de Acesso</li>
         </ul>
     </div>
 
@@ -74,7 +74,7 @@
     </div>
 
     <div class="section" id="get-validar">
-        <h2>✔️ GET /validar-token</h2>
+        <h2>✔️ GET - /validarToken/</h2>
         <p>Verifica a validade do token de acesso (access token) enviado no cabeçalho da requisição. Este endpoint não renova o token, apenas informa se ele ainda é válido.</p>
         <h3>Corpo da requisição:</h3>
         <p>Não há corpo de requisição.</p>
@@ -88,7 +88,7 @@
     </div>
 
     <div class="section" id="post-refresh">
-        <h2>🔄 POST /refresh-token</h2>
+        <h2>🔄 POST - /refresh/</h2>
         <p>Renova o token de acesso (access token) usando um token de refresh (refresh token). Este endpoint deve ser usado quando o access token expirar para obter um novo, evitando a necessidade de um novo login.</p>
         <h3>Corpo da requisição:</h3>
         <pre>{
