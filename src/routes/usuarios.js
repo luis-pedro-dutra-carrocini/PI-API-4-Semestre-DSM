@@ -1,10 +1,14 @@
 import { Router } from 'express';
-import { criarUsuario, obterUsuarioEmail, obterUsuarioId, alterarUsuario, login, logout, excluirUsuario, obterUsuarios, criptografarSenha } from '../controllers/usuarios.js';
+import { criarUsuario, obterUsuarioLogado, alterarUsuario, login, excluirUsuario, logout } from '../controllers/usuarios.js';
 
 const r = Router();
 
 // Para testes
-r.get('/criptografarSenha/:senha', criptografarSenha);
+//r.get('/criptografarSenha/:senha', criptografarSenha);
+
+//r.get('/', obterUsuarios);
+
+//r.post('/logout', logout);
 
 r.post('/', criarUsuario);
 /* 
@@ -38,31 +42,34 @@ JSON Example
 }
 */
 
-r.get('/', obterUsuarios)
+r.get('/id/', obterUsuarioLogado);
 
-r.get('/id/:id', obterUsuarioId);
-// id na URL, exemplo: /id/1
-
-r.get('/email/:email', obterUsuarioEmail);
-// email na URL, exemplo: /email/exemplo@mail.com
+//r.get('/email/:email', obterUsuarioEmail);
 
 r.post('/login', login);
 /*
 JSON Example
 {
   "UsuarioEmail": "exemplo@email.com",
-  "UsuarioSenha": "Senha"
+  "UsuarioSenha": "Senha",
+  "TipoLogin": "App" ou "Web"
 }
 */
 
 r.post('/logout', logout);
-// Sem parâmetros ou corpo
+/*
+JSON Example
+{
+  "token": "Bearer token_de_refresh_aqui"
+}
+*/
 
 r.delete('/', excluirUsuario);
 /*
 JSON Example
 {
-  "UsuarioSenha": "Senha"}
+  "UsuarioSenha": "Senha"
+}
 */
 
 export default r;

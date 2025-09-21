@@ -1,5 +1,109 @@
 import bcrypt from "bcrypt";
+import jwt from 'jsonwebtoken';
+import crypto from 'crypto';
 
+/**
+ * Verifica uma assinatura digital usando a chave pública.
+ * @param {string} assinatura A assinatura recebida do dispositivo.
+ * @param {object} dadosAssinados O objeto de dados que foi assinado.
+ * @param {string} chavePublica A chave pública do dispositivo, obtida do banco de dados.
+ * @returns {boolean} Retorna true se a assinatura for válida, false caso contrário.
+*/
+// ... (código da função loginMochila)
+
+export function verificarAssinatura(assinatura, dadosAssinados, chavePublica) {
+    try {
+        const assinaturaBuffer = Buffer.from(assinatura, 'base64');
+        
+        // Garante que a string para verificação é a mesma que foi assinada
+        const dadosParaVerificar = JSON.stringify(dadosAssinados, Object.keys(dadosAssinados).sort());
+        
+        // Usa RSA-SHA256, que padroniza o padding como PKCS1v15
+        const verifier = crypto.createVerify('RSA-SHA256');
+        
+        verifier.update(dadosParaVerificar);
+
+        // A verificação é simples e direta
+        return verifier.verify(chavePublica, assinaturaBuffer);
+
+    } catch (error) {
+        console.error('Erro ao verificar a assinatura:', error);
+        return false;
+    }
+}
+
+// Middleware para verificar o token JWT em rotas protegidas ---
+export async function verificarToken(req) {
+    try {
+        const authHeader = req.headers['authorization'];
+        const token = authHeader && authHeader.split(' ')[1];
+
+        if (token == null) {
+            return false;
+        }
+
+        // Usa uma Promise para transformar a chamada de callback em async/await
+        const payload = await new Promise((resolve, reject) => {
+            jwt.verify(token, process.env.SECRET_KEY, (err, payload) => {
+                if (err) {
+                    reject(err);
+                } else {
+                    resolve(payload);
+                }
+            });
+        });
+
+        // Retorna o payload se a verificação for bem-sucedida
+        return payload;
+    } catch (e) {
+        // Retorna false se a verificação falhar (token inválido ou expirado)
+        return false;
+    }
+}
+
+// Middleware para verificar o token JWT em rotas protegidas enviado via JSON ---
+export async function verificarTokenJson(authToken) {
+    try {
+        const token = authToken && authToken.split(' ')[1];
+
+        if (token == null) {
+            return false;
+        }
+
+        // Usa uma Promise para transformar a chamada de callback em async/await
+        const payload = await new Promise((resolve, reject) => {
+            jwt.verify(token, process.env.SECRET_KEY, (err, payload) => {
+                if (err) {
+                    reject(err);
+                } else {
+                    resolve(payload);
+                }
+            });
+        });
+
+        // Retorna o payload se a verificação for bem-sucedida
+        return payload;
+    } catch (e) {
+        // Retorna false se a verificação falhar (token inválido ou expirado)
+        return false;
+    }
+}
+
+export const verificarTokenDoCorpo = (req) => {
+    try {
+        return req.body.token;
+    } catch {
+        return null;
+    }
+};
+
+// Não utilizada, deve ser feito do lado do cliente
+/*
+export function logout() {
+    localStorage.removeItem('jwtToken');
+    console.log("Token JWT removido. O usuário está deslogado.");
+}
+*/
 
 export function roundTo2(value) {
   return Math.round(value * 100) / 100; // garante 2 casas
@@ -52,13 +156,16 @@ export async function verificarSenha(senha, hash) {
   return await bcrypt.compare(senha, hash);
 }
 
+/*
 export function validarSessao(req) {
   if (req.session && req.session.usuario) {
     return true;
   }
   return false;
 }
+*/
 
+/*
 export async function destruirSessao(req) {
   req.session.destroy((err) => {
       if (err) {
@@ -68,12 +175,15 @@ export async function destruirSessao(req) {
       return true;
   }); 
 }
+*/
 
+/*
 export function criaSessao(req, id) {
   req.session.usuario = {
     id: id
   };
 }
+*/
 
 // Calcula a diferença entre duas datas em dias, semanas, meses ou anos
 // O parâmetro `decimal` define se o resultado será decimal (true) ou inteiro arredondado para baixo (false)

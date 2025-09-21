@@ -33,7 +33,7 @@ CREATE TABLE "public"."Mochilas" (
 );
 
 -- CreateTable
-CREATE TABLE "public"."Usuarios_Mochilas" (
+CREATE TABLE "public"."UsuariosMochilas" (
     "UsuarioId" INTEGER NOT NULL,
     "MochilaId" INTEGER NOT NULL,
     "MochilaNome" VARCHAR(100),
@@ -41,7 +41,7 @@ CREATE TABLE "public"."Usuarios_Mochilas" (
     "DataInicioUso" TIMESTAMP(3),
     "DataFimUso" TIMESTAMP(3),
 
-    CONSTRAINT "Usuarios_Mochilas_pkey" PRIMARY KEY ("UsuarioId","MochilaId")
+    CONSTRAINT "UsuariosMochilas_pkey" PRIMARY KEY ("UsuarioId","MochilaId")
 );
 
 -- CreateTable
@@ -94,16 +94,16 @@ CREATE UNIQUE INDEX "Mochilas_MochilaCodigo_key" ON "public"."Mochilas"("Mochila
 CREATE UNIQUE INDEX "Mochilas_MochilaSenha_key" ON "public"."Mochilas"("MochilaSenha");
 
 -- CreateIndex
-CREATE INDEX "Usuarios_Mochilas_MochilaId_idx" ON "public"."Usuarios_Mochilas"("MochilaId");
+CREATE INDEX "UsuariosMochilas_MochilaId_idx" ON "public"."UsuariosMochilas"("MochilaId");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "Admins_AdminEmail_key" ON "public"."Admins"("AdminEmail");
 
 -- AddForeignKey
-ALTER TABLE "public"."Usuarios_Mochilas" ADD CONSTRAINT "Usuarios_Mochilas_UsuarioId_fkey" FOREIGN KEY ("UsuarioId") REFERENCES "public"."Usuarios"("UsuarioId") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "public"."UsuariosMochilas" ADD CONSTRAINT "UsuariosMochilas_UsuarioId_fkey" FOREIGN KEY ("UsuarioId") REFERENCES "public"."Usuarios"("UsuarioId") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "public"."Usuarios_Mochilas" ADD CONSTRAINT "Usuarios_Mochilas_MochilaId_fkey" FOREIGN KEY ("MochilaId") REFERENCES "public"."Mochilas"("MochilaId") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "public"."UsuariosMochilas" ADD CONSTRAINT "UsuariosMochilas_MochilaId_fkey" FOREIGN KEY ("MochilaId") REFERENCES "public"."Mochilas"("MochilaId") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "public"."Medicoes" ADD CONSTRAINT "Medicoes_MochilaId_fkey" FOREIGN KEY ("MochilaId") REFERENCES "public"."Mochilas"("MochilaId") ON DELETE CASCADE ON UPDATE CASCADE;

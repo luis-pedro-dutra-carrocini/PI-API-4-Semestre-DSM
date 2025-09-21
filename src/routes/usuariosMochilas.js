@@ -1,8 +1,8 @@
 import { Router } from 'express';
-import { assumirUsoMochila, encerrarUsoApp, encerrarUsoIOT, listarUsuariosMochilas, vincularMochila, obterMochilaUsuario } from '../controllers/usuariosMochilas.js';
+import { assumirUsoMochila, encerrarUsoApp, encerrarUsoIOT, vincularMochila, obterMochilaUsuario } from '../controllers/usuariosMochilas.js';
 const r = Router();
 
-r.get('/', listarUsuariosMochilas);
+//r.get('/', listarUsuariosMochilas);
 
 r.get('/usuario', obterMochilaUsuario); 
 

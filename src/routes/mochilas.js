@@ -1,7 +1,13 @@
 import { Router } from 'express';
-import { obterMochilas, criarMochila, obterMochilaCodigo, obterMochilaId, excluirMochila, alterarMochila } from '../controllers/mochilas.js';
+import { criarMochila, obterMochilaCodigo, excluirMochila, alterarMochila,  loginMochila, alterarStatusMochila } from '../controllers/mochilas.js';
 
 const r = Router();
+
+//r.get('/usuario', obterMochilasUsuario);
+
+//r.get('/', obterMochilas);
+
+//r.get('/id/:id', obterMochilaId);
 
 r.post('/', criarMochila);
 /*
@@ -15,21 +21,35 @@ JSON Example
 }
 */
 
-r.get('/', obterMochilas);
+r.post('/loginMochila', loginMochila);
+/*
+    "MochilaCodigo": "Anunufnsw",
+    "assinatura": "a",
+    "timestamp": "2023-11-20T15:04:05.000Z"
+*/
 
 r.get('/codigo/:codigo', obterMochilaCodigo);
-
-r.get('/id/:id', obterMochilaId);
 
 r.put('/', alterarMochila);
 /*
 JSON Example
 {
-  "MochilaId": 1,
   "MochilaCodigo": "D8aapJDzLoWs",
   "MochilaPesoMax": 10.5, 
   "MochilaDescricao": "Mochila de Exemplo",
   "AlterarSenha": "Sim" ou "Somente" ou "Não" ou não informado =  Não
+  "AdminEmail": "adminexemplo@email.com",
+  "passwordAdmin": "senhaAdmin",
+  "password": "senhaAlteracaoMochila"
+}
+*/
+
+r.put('/status/s', alterarStatusMochila);
+/*
+JSON Example
+{
+  "MochilaCodigo": "D8aapJDzLoWs",
+  "MochilaStatus": "Ativo" ou "Produção",
   "AdminEmail": "adminexemplo@email.com",
   "passwordAdmin": "senhaAdmin",
   "password": "senhaAlteracaoMochila"

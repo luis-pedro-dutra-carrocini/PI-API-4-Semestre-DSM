@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API - Mochilas Usuário</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f9f9f9;
+            color: #333;
+        }
+
+        h1,
+        h2,
+        h3 {
+            color: #222;
+        }
+
+        .section {
+            margin-bottom: 40px;
+            padding: 20px;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        pre {
+            background: #eee;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+
+        a {
+            color: #0056b3;
+            text-decoration: none;
+        }
+
+        a:hover {
+            text-decoration: underline;
+        }
+
+        .back-link {
+            display: inline-block;
+            margin-top: 10px;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>🎒 API - Mochilas Usuário</h1>
+    <p>Esta é a documentação da API para a interação do usuário com as mochilas. A maioria dos endpoints exige autenticação de sessão do usuário.</p>
+
+    <div class="section" id="endpoints">
+        <h2>🔗 Endpoints</h2>
+        <ul>
+            <li><a href="index.html">Voltar ao Menu</a></li>
+        </ul>
+        <ul>
+            <li><a href="#get-usuario">GET /mochilas/usuario</a> - Obter mochilas do usuário</li>
+            <li><a href="#post-vincular">POST /mochilas/vincular-mochila</a> - Vincular mochila a usuário</li>
+            <li><a href="#post-assumir-uso">POST /mochilas/assumir-uso</a> - Assumir uso de mochila</li>
+            <li><a href="#post-encerrar-app">POST /mochilas/encerrar-uso-app</a> - Encerrar uso via app</li>
+            <li><a href="#post-encerrar-iot">POST /mochilas/encerrar-uso-iot</a> - Encerrar uso via IOT</li>
+        </ul>
+    </div>
+
+    <div class="section" id="autenticacao">
+        <h2>🔒 Autenticação</h2>
+        <p>A maioria dos endpoints desta API requer autenticação de sessão via <strong>JSON Web Token (JWT)</strong>. O token deve ser enviado no cabeçalho (header) da requisição, utilizando o esquema <code>Bearer</code>.</p>
+        <h3>Exemplo de Header de Requisição:</h3>
+        <pre>Authorization: Bearer &lt;seu_token_aqui&gt;</pre>
+    </div>
+
+    <div class="section" id="get-usuario">
+        <h2>📥 GET /mochilas/usuario</h2>
+        <p>Obtém todas as mochilas vinculadas ao usuário logado, com informações sobre o status de uso e período. Requer <a href="#autenticacao">autenticação</a>.</p>
+        <h3>Corpo da requisição:</h3>
+        <p>Não há corpo de requisição.</p>
+        <h3>Respostas:</h3>
+        <ul>
+            <li>`200 OK`: Retorna um array de objetos com as mochilas do usuário.
+                <pre>[
+    {
+        "MochilaCodigo": "codigo",
+        "MochilaDescricao": "Mochila de teste",
+        "MochilaPesoMax": 10.5,
+        "MochilaNome": "Mochila de Viagem",
+        "UsoStatus": "Não Usando",
+        "DataFimUso": null,
+        "DataInicioUso": null
+    },
+    ...
+]</pre>
+            </li>
+            <li>`401 Unauthorized`: `{ "error": "Usuário não autenticado" }`</li>
+            <li>`403 Forbidden`: `{ "error": "Token inválido para usuário" }`</li>
+            <li>`400 Bad Request`: `{ "error": "ID do usuário inválido" }`</li>
+            <li>`500 Internal Server Error`: `{ "error": "Erro ao obter mochilas" }`</li>
+        </ul>
+        <a href="#endpoints" class="back-link">⬅ Voltar para Endpoints</a>
+    </div>
+
+    <div class="section" id="post-vincular">
+        <h2>🔗 POST /mochilas/vincular-mochila</h2>
+        <p>Vincula uma mochila existente ao usuário logado, usando o código da mochila e um apelido para identificação. Requer <a href="#autenticacao">autenticação</a>.</p>
+        <h3>Corpo da requisição:</h3>
+        <pre>{
+    "MochilaCodigo": "codigo",
+    "MochilaNome": "Mochila do Trabalho"
+}</pre>
+        <h3>Respostas:</h3>
+        <ul>
+            <li>`200 OK`: `{ "ok": true, "message": "Mochila vinculada com sucesso" }`</li>
+            <li>`400 Bad Request`: `{ "error": "Código da mochila é obrigatório" }` ou `{ "error": "ID do usuário inválido" }`</li>
+            <li>`401 Unauthorized`: `{ "error": "Usuário não autenticado" }`</li>
+            <li>`403 Forbidden`: `{ "error": "Token inválido para usuário" }`</li>
+            <li>`404 Not Found`: `{ "error": "Mochila não encontrada" }` ou `{ "error": "Usuário não encontrado" }`</li>
+            <li>`409 Conflict`: `{ "error": "Usuário já está vinculado a esta mochila" }`</li>
+            <li>`500 Internal Server Error`: `{ "error": "Erro ao vincular mochila" }`</li>
+        </ul>
+        <a href="#endpoints" class="back-link">⬅ Voltar para Endpoints</a>
+    </div>
+
+    <div class="section" id="post-assumir-uso">
+        <h2>▶️ POST /mochilas/assumir-uso</h2>
+        <p>Permite que o usuário logado assuma o uso de uma mochila, alterando seu status para "Usando". Requer <a href="#autenticacao">autenticação</a>.</p>
+        <h3>Corpo da requisição:</h3>
+        <pre>{
+    "MochilaCodigo": "codigo"
+}</pre>
+        <h3>Respostas:</h3>
+        <ul>
+            <li>`200 OK`: `{ "ok": true, "message": "Mochila assumida com sucesso" }`</li>
+            <li>`400 Bad Request`: `{ "error": "Código da mochila é obrigatório" }` ou `{ "error": "ID do usuário inválido" }`</li>
+            <li>`401 Unauthorized`: `{ "error": "Usuário não autenticado" }`</li>
+            <li>`403 Forbidden`: `{ "error": "Token inválido para usuário" }`</li>
+            <li>`404 Not Found`: `{ "error": "Mochila não encontrada" }` ou `{ "error": "Vínculo entre usuário e mochila não encontrado" }`</li>
+            <li>`409 Conflict`: `{ "error": "Já existe um usuário usando esta mochila" }`</li>
+            <li>`500 Internal Server Error`: `{ "error": "Erro ao assumir uso" }`</li>
+        </ul>
+        <a href="#endpoints" class="back-link">⬅ Voltar para Endpoints</a>
+    </div>
+
+    <div class="section" id="post-encerrar-app">
+        <h2>⏹️ POST /mochilas/encerrar-uso-app</h2>
+        <p>Encerra o uso de uma mochila que está em status "Usando" ou "Último a Usar" para o usuário logado. Requer <a href="#autenticacao">autenticação</a>.</p>
+        <h3>Corpo da requisição:</h3>
+        <pre>{
+    "MochilaCodigo": "codigo"
+}</pre>
+        <h3>Respostas:</h3>
+        <ul>
+            <li>`200 OK`: `{ "ok": true, "message": "Uso encerrado com sucesso" }`</li>
+            <li>`400 Bad Request`: `{ "error": "Código da mochila é obrigatório" }` ou `{ "error": "ID do usuário inválido" }`</li>
+            <li>`401 Unauthorized`: `{ "error": "Usuário não autenticado" }`</li>
+            <li>`403 Forbidden`: `{ "error": "Token inválido para usuário" }`</li>
+            <li>`404 Not Found`: `{ "error": "Mochila não encontrada" }` ou `{ "error": "Usuário não encontrado" }`</li>
+            <li>`409 Conflict`: `{ "error": "Nenhum uso ativo encontrado para encerrar" }`</li>
+            <li>`500 Internal Server Error`: `{ "error": "Erro ao encerrar uso" }`</li>
+        </ul>
+        <a href="#endpoints" class="back-link">⬅ Voltar para Endpoints</a>
+    </div>
+
+    <div class="section" id="post-encerrar-iot">
+        <h2>🔌 POST /mochilas/encerrar-uso-iot</h2>
+        <p>Encerra o uso de uma mochila por meio do dispositivo IoT, alterando o status para "Último a Usar". Requer autenticação específica da mochila (IoT), que é enviada via token no cabeçalho da requisição. <br><strong>Observação:</strong> Este endpoint não utiliza a autenticação de usuário padrão.</p>
+        <h3>Corpo da requisição:</h3>
+        <p>Não há corpo de requisição, a autenticação é feita via token JWT da mochila.</p>
+        <h3>Respostas:</h3>
+        <ul>
+            <li>`200 OK`: `{ "ok": true, "message": "Uso encerrado com sucesso" }`</li>
+            <li>`400 Bad Request`: `{ "error": "ID da mochila inválido" }`</li>
+            <li>`401 Unauthorized`: `{ "error": "Mochila não autenticada" }`</li>
+            <li>`403 Forbidden`: `{ "error": "Acesso negado. Token inválido para mochila." }`</li>
+            <li>`404 Not Found`: `{ "error": "Mochila não encontrada" }`</li>
+            <li>`409 Conflict`: `{ "error": "Nenhum uso ativo encontrado para encerrar" }`</li>
+            <li>`500 Internal Server Error`: `{ "error": "Erro ao encerrar uso" }`</li>
+        </ul>
+        <a href="#endpoints" class="back-link">⬅ Voltar para Endpoints</a>
+    </div>
+</body>
+
+</html>

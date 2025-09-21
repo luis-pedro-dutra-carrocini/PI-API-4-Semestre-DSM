@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API - Documentação Mochilas</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f9f9f9;
+            color: #333;
+        }
+
+        h1,
+        h2,
+        h3 {
+            color: #222;
+        }
+
+        .section {
+            margin-bottom: 40px;
+            padding: 20px;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        pre {
+            background: #eee;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+
+        a {
+            color: #0056b3;
+            text-decoration: none;
+        }
+
+        a:hover {
+            text-decoration: underline;
+        }
+
+        .back-link {
+            display: inline-block;
+            margin-top: 10px;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>🎒 API - Mochilas</h1>
+    <p>Esta é a documentação da API relacionada às mochilas. Todos os endpoints exigem autenticação de administrador,
+        exceto a busca e o login.</p>
+
+    <div class="section" id="endpoints">
+        <h2>🔗 Endpoints</h2>
+        <ul>
+            <li><a href="index.html">Voltar ao Menu</a></li>
+        </ul>
+        <ul>
+            <li><a href="#post">POST /mochilas</a> - Criar mochila</li>
+            <li><a href="#get-codigo">GET /mochilas/:codigo</a> - Buscar mochila por código</li>
+            <li><a href="#put">PUT /mochilas</a> - Atualizar mochila</li>
+            <li><a href="#delete">DELETE /mochilas</a> - Excluir mochila (desativar)</li>
+            <li><a href="#login">POST /loginMochila</a> - Login da mochila (IoT)</li>
+        </ul>
+    </div>
+
+    <div class="section" id="autenticacao">
+        <h2>🔒 Autenticação</h2>
+        <p>A maioria dos endpoints desta API requer autenticação de sessão via <strong>JSON Web Token (JWT)</strong>. O
+            token deve ser enviado no cabeçalho (header) da requisição, utilizando o esquema <code>Bearer</code>.</p>
+        <h3>Exemplo de Header de Requisição:</h3>
+        <pre>Authorization: Bearer &lt;seu_token_aqui&gt;</pre>
+    </div>
+
+    <div class="section" id="post">
+        <h2>📤 POST /mochilas</h2>
+        <p>Cria uma nova mochila no sistema. Requer autenticação de administrador e a senha de criação.</p>
+        <h3>Corpo da requisição:</h3>
+        <pre>{
+    "MochilaPesoMax": 10.5,
+    "MochilaDescricao": "Mochila de teste para uso em campo",
+    "AdminEmail": "admin@email.com",
+    "passwordAdmin": "SenhaDoAdmin",
+    "password": "SenhaDeCriacao"
+}</pre>
+        <h3>Respostas:</h3>
+        <ul>
+            <li>`201 Created`: `{ "ok": true, "message": "Mochila cadastrada com sucesso", "mochilaCadastrada": { ... }
+                }`</li>
+            <li>`400 Bad Request`: Retorna o erro específico de validação (ex: "Peso máximo da mochila é obrigatório e
+                deve ser de 0,1 à 50 kg").</li>
+            <li>`403 Forbidden`: `{ "error": "Senha incorreta" }` ou `{ "error": "Senhas e e-mail obrigatórios para
+                criação" }`</li>
+            <li>`404 Not Found`: `{ "error": "Administrador não encontrado" }`</li>
+            <li>`409 Conflict`: `{ "error": "Mochila já cadastrada, código já usado, tente novamente" }`</li>
+            <li>`500 Internal Server Error`: `{ "error": "Erro ao criar mochila" }`</li>
+        </ul>
+        <a href="#endpoints" class="back-link">⬅ Voltar para Endpoints</a>
+    </div>
+
+    <div class="section" id="get-codigo">
+        <h2>📥 GET /mochilas/:codigo</h2>
+        <p>Busca uma mochila específica pelo código. Não requer autenticação.</p>
+        <h3>Parâmetros da URL:</h3>
+        <ul>
+            <li>`:codigo`: Código da mochila a ser buscada.</li>
+        </ul>
+        <h3>Respostas:</h3>
+        <ul>
+            <li>`200 OK`: Retorna os dados da mochila (exceto a senha).</li>
+            <li>`400 Bad Request`: `{ "error": "Codigo da mochila é obrigatório" }`</li>
+            <li>`404 Not Found`: `{ "error": "Mochila não encontrada" }`</li>
+            <li>`500 Internal Server Error`: `{ "error": "Erro ao obter mochilas" }`</li>
+        </ul>
+        <a href="#endpoints" class="back-link">⬅ Voltar para Endpoints</a>
+    </div>
+
+    <div class="section" id="put">
+        <h2>✏️ PUT /mochilas</h2>
+        <p>Atualiza os dados de uma mochila. Requer autenticação de administrador e a senha de alteração. O Código é
+            obrigatório no corpo da requisição.</p>
+        <h3>Corpo da requisição:</h3>
+        <pre>{
+    "MochilaCodigo": "codigo",
+    "MochilaPesoMax": 12.0,
+    "MochilaDescricao": "Mochila de teste - atualizada",
+    "AdminEmail": "admin@email.com",
+    "passwordAdmin": "SenhaDoAdmin",
+    "password": "SenhaDeAlteracao",
+    "AlterarSenha": "Não"
+}</pre>
+        <p>Envie `"AlterarSenha": "Sim"` para alterar a senha da mochila e `"AlterarSenha": "Somente"` para alterar
+            apenas a senha.</p>
+        <h3>Respostas:</h3>
+        <ul>
+            <li>`200 OK`: `{ "ok": true, "message": "Mochila alterada com sucesso", "mochilaAlterada": { ... } }` ou `{
+                "ok": true, "message": "Senha da mochila alterada com sucesso", "MochilaSenha": "nova_senha_gerada" }`
+            </li>
+            <li>`400 Bad Request`: `{ "error": "ID da mochila é obrigatório" }` ou `{ "error": "Código da mochila é
+                inválido" }`</li>
+            <li>`403 Forbidden`: `{ "error": "Senha incorreta" }`</li>
+            <li>`404 Not Found`: `{ "error": "Administrador não encontrado" }` ou `{ "error": "Mochila não encontrada ou
+                já excluída" }`</li>
+            <li>`500 Internal Server Error`: `{ "error": "Erro ao alterar mochila" }`</li>
+        </ul>
+        <a href="#endpoints" class="back-link">⬅ Voltar para Endpoints</a>
+    </div>
+
+    <div class="section" id="delete">
+        <h2>🗑 DELETE /mochilas</h2>
+        <p>Exclui uma mochila, alterando seu status para "Inativo". Requer autenticação de administrador e a senha de
+            exclusão. O Código é obrigatório no corpo da requisição.</p>
+        <h3>Corpo da requisição:</h3>
+        <pre>{
+    "MochilaCodigo": "codigo",
+    "AdminEmail": "admin@email.com",
+    "passwordAdmin": "SenhaDoAdmin",
+    "password": "SenhaDeExclusao"
+}</pre>
+        <h3>Respostas:</h3>
+        <ul>
+            <li>`200 OK`: `{ "ok": true, "message": "Mochila excluída com sucesso" }`</li>
+            <li>`400 Bad Request`: `{ "error": "Código da mochila é inválido" }`</li>
+            <li>`403 Forbidden`: `{ "error": "Senha incorreta" }`</li>
+            <li>`404 Not Found`: `{ "error": "Administrador não encontrado" }` ou `{ "error": "Mochila não encontrada ou
+                já excluída" }`</li>
+            <li>`500 Internal Server Error`: `{ "error": "Erro ao excluir mochila" }`</li>
+        </ul>
+        <a href="#endpoints" class="back-link">⬅ Voltar para Endpoints</a>
+    </div>
+
+    <div class="section" id="login">
+        <h2>🔑 POST /loginMochila</h2>
+        <p>Autentica uma mochila (dispositivo IoT) usando uma assinatura digital para emitir um token de acesso e um de
+            atualização.</p>
+        <h3>Corpo da requisição:</h3>
+        <pre>{
+    "MochilaCodigo": "codigo",
+    "assinatura": "assinatura_digital_da_mochila",
+    "timestamp": "momento_da_requisicao"
+}</pre>
+        <h3>Respostas:</h3>
+        <ul>
+            <li>`200 OK`: `{ "ok": true, "message": "Autenticação da mochila realizada com sucesso.", "accessToken":
+                "...", "refreshToken": "..." }`</li>
+            <li>`400 Bad Request`: `{ "error": "Código da mochila, assinatura e timestamp são obrigatórios." }`</li>
+            <li>`401 Unauthorized`: `{ "ok": false, "message": "Mochila não encontrada ou inativa." }` ou `{ "ok":
+                false, "message": "Assinatura inválida. Autenticação falhou." }`</li>
+            <li>`500 Internal Server Error`: `{ "error": "Erro interno do servidor." }`</li>
+        </ul>
+        <a href="#endpoints" class="back-link">⬅ Voltar para Endpoints</a>
+    </div>
+</body>
+
+</html>

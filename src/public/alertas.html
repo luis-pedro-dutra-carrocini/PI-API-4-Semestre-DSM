@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API - Alertas</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f9f9f9;
+            color: #333;
+        }
+
+        h1,
+        h2,
+        h3 {
+            color: #222;
+        }
+
+        .section {
+            margin-bottom: 40px;
+            padding: 20px;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        pre {
+            background: #eee;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+
+        a {
+            color: #0056b3;
+            text-decoration: none;
+        }
+
+        a:hover {
+            text-decoration: underline;
+        }
+
+        .back-link {
+            display: inline-block;
+            margin-top: 10px;
+            font-size: 0.9em;
+        }
+
+        .auth-info {
+            background-color: #e6f7ff;
+            border-left: 4px solid #3399ff;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 4px;
+        }
+
+        .auth-info h4 {
+            margin-top: 0;
+            margin-bottom: 5px;
+        }
+
+        .auth-info code {
+            background-color: #d6eaf8;
+            padding: 2px 4px;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>⚠️ API - Alertas</h1>
+    <p>Esta é a documentação da API para a criação, listagem e gerenciamento de alertas relacionados às medições de
+        mochilas. Todas as rotas de gerenciamento de alertas agora exigem autenticação de usuário via token JWT.</p>
+
+    <div class="section" id="endpoints">
+        <h2>🔗 Endpoints</h2>
+        <ul>
+            <li><a href="index.html">Voltar ao Menu</a></li>
+        </ul>
+        <ul>
+            <li><a href="#get-id">GET /alertas/:id</a> - Obter alerta por ID</li>
+            <li><a href="#put-atualizar">PUT /alertas/:id</a> - Atualizar alerta (alterar status)</li>
+            <li><a href="#get-usuario">POST /alertas/usuario</a> - Listar alertas do usuário</li>
+            <li><a href="#delete-id">DELETE /alertas/:id</a> - Deletar alerta</li>
+        </ul>
+    </div>
+
+    <div class="section" id="autenticacao">
+        <h2>🔒 Autenticação</h2>
+        <p>A maioria dos endpoints desta API requer autenticação de sessão via <strong>JSON Web Token (JWT)</strong>. O
+            token deve ser enviado no cabeçalho (header) da requisição, utilizando o esquema <code>Bearer</code>.</p>
+        <h3>Exemplo de Header de Requisição:</h3>
+        <pre>Authorization: Bearer &lt;seu_token_aqui&gt;</pre>
+    </div>
+
+    <div class="section" id="get-id">
+        <h2>🔎 GET /alertas/:id</h2>
+        <p>Obtém os detalhes de um alerta específico pelo seu ID. Requer Token de autenticação, garantindo que
+            apenas o dono do alerta possa visualizá-lo.</p>
+        <h3>Parâmetros de URL:</h3>
+        <pre>/alertas/456</pre>
+        <h3>Respostas:</h3>
+        <ul>
+            <li>`200 OK`: Retorna o objeto do alerta.</li>
+            <li>`400 Bad Request`: `{ "error": "ID do alerta inválido" }`</li>
+            <li>`401 Unauthorized`: `{ "error": "Usuário não autenticado" }`</li>
+            <li>`403 Forbidden`: `{ "error": "Token inválido para usuário" }`</li>
+            <li>`404 Not Found`: `{ "error": "Alerta não encontrado" }` ou `{ "error": "Usuário não encontrado" }`</li>
+            <li>`500 Internal Server Error`: `{ "error": "Erro ao obter alerta" }`</li>
+        </ul>
+        <a href="#endpoints" class="back-link">⬅ Voltar para Endpoints</a>
+    </div>
+
+    <div class="section" id="put-atualizar">
+        <h2>🔄 PUT /alertas/:id</h2>
+        <p>Atualiza o status de um alerta existente. Apenas o status pode ser alterado. Requer Token de autenticação.
+        </p>
+        <h3>Parâmetros de URL:</h3>
+        <pre>/alertas/456</pre>
+        <h3>Corpo da requisição:</h3>
+        <pre>{
+    "AlertaStatus": "Lido"
+}</pre>
+        <h3>Respostas:</h3>
+        <ul>
+            <li>`200 OK`: `{ "ok": true, "message": "Alerta atualizado com sucesso" }`</li>
+            <li>`400 Bad Request`: `{ "error": "ID do alerta inválido" }` ou `{ "error": "Status de alerta inválido" }`
+            </li>
+            <li>`401 Unauthorized`: `{ "error": "Usuário não autenticado" }`</li>
+            <li>`403 Forbidden`: `{ "error": "Token inválido para usuário" }`</li>
+            <li>`404 Not Found`: `{ "error": "Alerta não encontrado" }` ou `{ "error": "Usuário não encontrado" }`</li>
+            <li>`500 Internal Server Error`: `{ "error": "Erro ao atualizar alerta" }`</li>
+        </ul>
+        <a href="#endpoints" class="back-link">⬅ Voltar para Endpoints</a>
+    </div>
+
+    <div class="section" id="get-usuario">
+        <h2>👤 POST /alertas/usuario</h2>
+        <p>Lista todos os alertas de um usuário logado, filtrados pelo status informado. Requer Token de autenticação.
+        </p>
+        <h3>Corpo da requisição:</h3>
+        <pre>{
+    "AlertaStatus": "Lido"
+}</pre>
+        <h3>Respostas:</h3>
+        <ul>
+            <li>`200 OK`: Retorna um array de alertas do usuário.</li>
+            <li>`400 Bad Request`: `{ "error": "Status de alerta inválido. Deve ser 'Enviar', 'Enviado' ou 'Lido'" }`
+            </li>
+            <li>`401 Unauthorized`: `{ "error": "Usuário não autenticado" }`</li>
+            <li>`403 Forbidden`: `{ "error": "Token inválido para usuário" }`</li>
+            <li>`404 Not Found`: `{ "error": "Usuário não encontrado" }`</li>
+            <li>`500 Internal Server Error`: `{ "error": "Erro ao listar alertas" }`</li>
+        </ul>
+        <a href="#endpoints" class="back-link">⬅ Voltar para Endpoints</a>
+    </div>
+
+    <div class="section" id="delete-id">
+        <h2>❌ DELETE /alertas/:id</h2>
+        <p>Deleta um alerta específico pelo seu ID. Requer Token de autenticação, garantindo que apenas o
+            dono do alerta possa deletá-lo.</p>
+        <h3>Parâmetros de URL:</h3>
+        <pre>/alertas/456</pre>
+        <h3>Respostas:</h3>
+        <ul>
+            <li>`200 OK`: `{ "ok": true, "message": "Alerta deletado com sucesso" }`</li>
+            <li>`400 Bad Request`: `{ "error": "ID do alerta inválido" }`</li>
+            <li>`401 Unauthorized`: `{ "error": "Usuário não autenticado" }`</li>
+            <li>`403 Forbidden`: `{ "error": "Token inválido para usuário" }`</li>
+            <li>`404 Not Found`: `{ "error": "Alerta não encontrado" }` ou `{ "error": "Usuário não encontrado" }`</li>
+            <li>`500 Internal Server Error`: `{ "error": "Erro ao deletar alerta" }`</li>
+        </ul>
+        <a href="#endpoints" class="back-link">⬅ Voltar para Endpoints</a>
+    </div>
+</body>
+
+</html>

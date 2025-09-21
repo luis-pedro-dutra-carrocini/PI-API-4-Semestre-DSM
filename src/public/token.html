@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API - Documentação Tokens</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f9f9f9;
+            color: #333;
+        }
+
+        h1,
+        h2,
+        h3 {
+            color: #222;
+        }
+
+        .section {
+            margin-bottom: 40px;
+            padding: 20px;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        pre {
+            background: #eee;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+
+        a {
+            color: #0056b3;
+            text-decoration: none;
+        }
+
+        a:hover {
+            text-decoration: underline;
+        }
+
+        .back-link {
+            display: inline-block;
+            margin-top: 10px;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>🔑 API - Autenticação</h1>
+    <p>Esta é a documentação da API para gerenciamento de tokens de autenticação.</p>
+
+    <div class="section" id="endpoints">
+        <h2>🔗 Endpoints</h2>
+        <ul>
+            <li><a href="index.html">Voltar ao Menu</a></li>
+        </ul>
+        <ul>
+            <li><a href="#get-validar">GET /validar-token</a> - Validar Token</li>
+            <li><a href="#post-refresh">POST /refresh-token</a> - Renovar Token de Acesso</li>
+        </ul>
+    </div>
+
+    <div class="section" id="autenticacao">
+        <h2>🔒 Autenticação</h2>
+        <p>A maioria dos endpoints desta API requer autenticação via <strong>JSON Web Token (JWT)</strong>. O token deve ser enviado no cabeçalho (header) da requisição, utilizando o esquema <code>Bearer</code>.</p>
+        <h3>Exemplo de Header de Requisição:</h3>
+        <pre>Authorization: Bearer &lt;seu_token_aqui&gt;</pre>
+    </div>
+
+    <div class="section" id="get-validar">
+        <h2>✔️ GET /validar-token</h2>
+        <p>Verifica a validade do token de acesso (access token) enviado no cabeçalho da requisição. Este endpoint não renova o token, apenas informa se ele ainda é válido.</p>
+        <h3>Corpo da requisição:</h3>
+        <p>Não há corpo de requisição.</p>
+        <h3>Respostas:</h3>
+        <ul>
+            <li>`200 OK`: `{ "ok": true, "message": "Token válido. Usuário autenticado" }`</li>
+            <li>`401 Unauthorized`: `{ "error": "Usuário não autenticado" }` (o token está ausente, é inválido ou expirou)</li>
+            <li>`500 Internal Server Error`: `{ "error": "Erro ao validar o token" }`</li>
+        </ul>
+        <a href="#endpoints" class="back-link">⬅ Voltar para Endpoints</a>
+    </div>
+
+    <div class="section" id="post-refresh">
+        <h2>🔄 POST /refresh-token</h2>
+        <p>Renova o token de acesso (access token) usando um token de refresh (refresh token). Este endpoint deve ser usado quando o access token expirar para obter um novo, evitando a necessidade de um novo login.</p>
+        <h3>Corpo da requisição:</h3>
+        <pre>{
+    "refreshToken": "eyJ..."
+}</pre>
+        <h3>Respostas:</h3>
+        <ul>
+            <li>`200 OK`: Retorna um novo token de acesso.
+                <pre>{
+    "ok": true,
+    "message": "Access token renovado com sucesso.",
+    "accessToken": "eyJh..."
+}</pre>
+            </li>
+            <li>`400 Bad Request`: `{ "error": "Token de refresh não fornecido." }`</li>
+            <li>`401 Unauthorized`: `{ "error": "Token de refresh revogado." }`, `{ "error": "Token de refresh expirado. Por favor, faça login novamente." }` ou `{ "error": "Token de refresh inválido." }`</li>
+            <li>`500 Internal Server Error`: `{ "error": "Erro ao renovar o token" }`</li>
+        </ul>
+        <a href="#endpoints" class="back-link">⬅ Voltar para Endpoints</a>
+    </div>
+
+</body>
+
+</html>

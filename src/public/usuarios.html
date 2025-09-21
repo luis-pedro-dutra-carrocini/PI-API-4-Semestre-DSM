@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API - Documentação Usuários</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f9f9f9;
+            color: #333;
+        }
+
+        h1,
+        h2,
+        h3 {
+            color: #222;
+        }
+
+        .section {
+            margin-bottom: 40px;
+            padding: 20px;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        pre {
+            background: #eee;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+
+        a {
+            color: #0056b3;
+            text-decoration: none;
+        }
+
+        a:hover {
+            text-decoration: underline;
+        }
+
+        .back-link {
+            display: inline-block;
+            margin-top: 10px;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>📘 API - Usuários</h1>
+    <p>Esta é a documentação da API relacionada aos usuários. Todos os endpoints, exceto POST /usuarios e POST /login, exigem autenticação de sessão.</p>
+
+    <div class="section" id="endpoints">
+        <h2>🔗 Endpoints</h2>
+        <ul>
+            <li><a href="index.html">Voltar ao Menu</a></li>
+        </ul>
+        <ul>
+            <li><a href="#post-criar">POST /usuarios</a> - Criar usuário</li>
+            <li><a href="#get-me">GET /usuarios/me</a> - Obter usuário logado</li>
+            <li><a href="#put">PUT /usuarios/:id</a> - Atualizar usuário</li>
+            <li><a href="#delete">DELETE /usuarios</a> - Excluir usuário</li>
+            <li><a href="#login">POST /login</a> - Login de usuário</li>
+            <li><a href="#logout">POST /logout</a> - Logout de usuário</li>
+        </ul>
+    </div>
+
+    <div class="section" id="autenticacao">
+        <h2>🔒 Autenticação</h2>
+        <p>A maioria dos endpoints desta API requer autenticação via <strong>JSON Web Token (JWT)</strong>. O token deve ser enviado no cabeçalho (header) da requisição, utilizando o esquema <code>Bearer</code>.</p>
+        <h3>Exemplo de Header de Requisição:</h3>
+        <pre>Authorization: Bearer &lt;seu_token_aqui&gt;</pre>
+    </div>
+
+    <div class="section" id="post-criar">
+        <h2>📤 POST /usuarios</h2>
+        <p>Cria um novo usuário no sistema.</p>
+        <h3>Corpo da requisição:</h3>
+        <pre>{
+    "UsuarioNome": "João Silva",
+    "UsuarioEmail": "joao@email.com",
+    "UsuarioSenha": "SenhaSegura123",
+    "UsuarioDtNascimento": "1990-01-01",
+    "UsuarioPeso": 75.5,
+    "UsuarioAltura": 1.75,
+    "UsuarioSexo": "Masculino",
+    "UsuarioFoto": "https://url.da.foto.jpg",
+    "UsuarioPesoMaximoPorcentagem": 10
+}</pre>
+        <h3>Respostas:</h3>
+        <ul>
+            <li>`201 Created`: `{ "ok": true, "message": "Usuário criado com sucesso" }`</li>
+            <li>`409 Conflict`: Retorna o erro específico de validação (ex: `"Nome deve ter entre 3 e 100 caracteres"`, `"E-mail já cadastrado"`, `"Senha deve ter pelo menos 8 caracteres"`, `"Usuário deve ter pelo menos 3 anos"`).</li>
+            <li>`500 Internal Server Error`: `{ "error": "Erro ao cadastrar usuário" }`</li>
+        </ul>
+        <a href="#endpoints" class="back-link">⬅ Voltar para Endpoints</a>
+    </div>
+
+    <div class="section" id="get-me">
+        <h2>📥 GET /usuarios/me</h2>
+        <p>Busca os dados do próprio usuário logado. Requer <a href="#autenticacao">autenticação de sessão</a>. Este endpoint ignora qualquer ID ou e-mail na URL e usa o ID do token de autenticação para buscar as informações.</p>
+        <h3>Corpo da requisição:</h3>
+        <p>Não há corpo de requisição.</p>
+        <h3>Respostas:</h3>
+        <ul>
+            <li>`200 OK`: Retorna os dados do usuário logado, exceto a senha.
+                <pre>{
+    "UsuarioNome": "João Silva",
+    "UsuarioEmail": "joao@email.com",
+    "UsuarioDtNascimento": "1990-01-01T00:00:00.000Z",
+    "UsuarioPeso": 75.5,
+    "UsuarioAltura": 1.75,
+    "UsuarioSexo": "Masculino",
+    "UsuarioFoto": "https://url.da.foto.jpg",
+    "UsuarioPesoMaximoPorcentagem": 10
+}</pre>
+            </li>
+            <li>`401 Unauthorized`: `{ "error": "Usuário não autenticado" }`</li>
+            <li>`403 Forbidden`: `{ "error": "Token inválido para usuário" }`</li>
+            <li>`404 Not Found`: `{ "error": "Usuário não encontrado" }`</li>
+            <li>`500 Internal Server Error`: `{ "error": "Erro ao obter usuário por id" }`</li>
+        </ul>
+        <a href="#endpoints" class="back-link">⬅ Voltar para Endpoints</a>
+    </div>
+
+    <div class="section" id="put">
+        <h2>✏️ PUT /usuarios/:id</h2>
+        <p>Atualiza os dados do usuário logado. Requer <a href="#autenticacao">autenticação de sessão</a>. O ID na URL é ignorado, a atualização é feita com base no usuário logado na sessão.</p>
+        <h3>Corpo da requisição:</h3>
+        <pre>{
+    "UsuarioNome": "João Silva",
+    "UsuarioEmail": "novoemail@email.com",
+    "UsuarioSenha": "NovaSenhaSegura",
+    "UsuarioDtNascimento": "1990-01-01",
+    "UsuarioPeso": 76.0,
+    "UsuarioAltura": 1.75,
+    "UsuarioSexo": "Masculino",
+    "UsuarioFoto": "https://url.da.foto.atualizada.jpg",
+    "UsuarioPesoMaximoPorcentagem": 10
+}</pre>
+        <p>Para deletar a foto de perfil, envie `UsuarioFoto` com o valor `"deletar"`. Para mantê-la, omita o campo ou envie `"null"` ou `""`.</p>
+        <h3>Respostas:</h3>
+        <ul>
+            <li>`200 OK`: `{ "ok": true, "message": "Usuário atualizado com sucesso" }`</li>
+            <li>`401 Unauthorized`: `{ "error": "Usuário não autenticado" }`</li>
+            <li>`403 Forbidden`: `{ "error": "Token inválido para usuário" }`</li>
+            <li>`404 Not Found`: `{ "error": "Usuário não encontrado" }`</li>
+            <li>`409 Conflict`: Retorna o erro específico de validação (ex: `"E-mail já cadastrado"`, `"Nome não pode ser nulo"`).</li>
+            <li>`500 Internal Server Error`: `{ "error": "Erro ao alterar usuário" }`</li>
+        </ul>
+        <a href="#endpoints" class="back-link">⬅ Voltar para Endpoints</a>
+    </div>
+
+    <div class="section" id="delete">
+        <h2>🗑 DELETE /usuarios</h2>
+        <p>Remove o usuário do sistema. Requer <a href="#autenticacao">autenticação de sessão</a> e a senha do usuário no corpo da requisição para confirmação. O registro é deletado do banco de dados.</p>
+        <h3>Corpo da requisição:</h3>
+        <pre>{
+    "UsuarioSenha": "SenhaParaConfirmarExclusao"
+}</pre>
+        <h3>Respostas:</h3>
+        <ul>
+            <li>`200 OK`: `{ "ok": true, "message": "Usuário excluído com sucesso" }`</li>
+            <li>`400 Bad Request`: `{ "error": "Senha é obrigatória para exclusão" }`</li>
+            <li>`401 Unauthorized`: `{ "error": "Usuário não autenticado" }` ou `{ "error": "Senha incorreta" }`</li>
+            <li>`403 Forbidden`: `{ "error": "Token inválido para usuário" }`</li>
+            <li>`404 Not Found`: `{ "error": "Usuário não encontrado" }`</li>
+            <li>`500 Internal Server Error`: `{ "error": "Erro ao excluir usuário" }`</li>
+        </ul>
+        <a href="#endpoints" class="back-link">⬅ Voltar para Endpoints</a>
+    </div>
+
+    <div class="section" id="login">
+        <h2>🔐 POST /login</h2>
+        <p>Realiza o login do usuário e retorna tokens de autenticação.</p>
+        <h3>Corpo da requisição:</h3>
+        <pre>{
+    "UsuarioEmail": "joao@email.com",
+    "UsuarioSenha": "SenhaSegura123",
+    "TipoLogin": "App"
+}</pre>
+        <p>O campo <code>TipoLogin</code> deve ser <strong>"App"</strong> ou <strong>"Web"</strong> e determina a duração do token de refresh.</p>
+        <h3>Respostas:</h3>
+        <ul>
+            <li>`200 OK`: Retorna os tokens de autenticação.
+                <pre>{
+    "ok": true,
+    "message": "Login realizado com sucesso.",
+    "accessToken": "eyJh...",
+    "refreshToken": "eyJ..."
+}</pre>
+            </li>
+            <li>`400 Bad Request`: `{ "error": "E-mail é obrigatório" }`, `{ "error": "Senha é obrigatória" }` ou `{ "error": "Tipo de login inválido." }`</li>
+            <li>`401 Unauthorized`: `{ "error": "Senha incorreta" }`</li>
+            <li>`403 Forbidden`: `{ "error": "Usuário suspenso. Contate o suporte." }` ou `{ "error": "Usuário não encontrado" }`</li>
+            <li>`404 Not Found`: `{ "error": "Usuário não encontrado" }`</li>
+            <li>`500 Internal Server Error`: `{ "error": "Erro ao realizar login" }`</li>
+        </ul>
+        <a href="#endpoints" class="back-link">⬅ Voltar para Endpoints</a>
+    </div>
+
+    <div class="section" id="logout">
+        <h2>🚪 POST /logout</h2>
+        <p>Encerra a sessão do usuário revogando o token de refresh, que não poderá mais ser usado para obter novos tokens de acesso.</p>
+        <h3>Corpo da requisição:</h3>
+        <pre>{
+    "refreshToken": "eyJ..."
+}</pre>
+        <h3>Respostas:</h3>
+        <ul>
+            <li>`200 OK`: `{ "ok": true, "message": "Sessão encerrada com sucesso." }` ou `{ "ok": true, "message": "Sessão já estava encerrada." }`</li>
+            <li>`400 Bad Request`: `{ "error": "Token de refresh não fornecido." }`</li>
+            <li>`500 Internal Server Error`: `{ "error": "Erro interno do servidor." }`</li>
+        </ul>
+        <a href="#endpoints" class="back-link">⬅ Voltar para Endpoints</a>
+    </div>
+</body>
+
+</html>

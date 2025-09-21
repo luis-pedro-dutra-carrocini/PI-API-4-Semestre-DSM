@@ -1,8 +1,8 @@
 import { Router } from 'express';
-import { criarAlerta, listarAlertas, listarAlertasMedicao , obterAlerta, atualizarAlerta, listarAlertasUsuario } from '../controllers/alertas.js';
+import { obterAlerta, atualizarAlerta, listarAlertasUsuario, deletarAlerta } from '../controllers/alertas.js';
 
 const r = Router();
-r.post('/', criarAlerta);
+//r.post('/', criarAlerta);
 /*
 {
   "MedicaoId": 1,
@@ -13,13 +13,19 @@ r.post('/', criarAlerta);
 }
 */
 
-r.get('/', listarAlertas);
+//r.get('/', listarAlertas);
 
-r.get('/medicao/:id', listarAlertasMedicao);
+//r.get('/medicao/:id', listarAlertasMedicao);
+
+/*
+{
+  "AlertaStatus": "Enviar" ou "Enviado" ou "Lido"
+}
+*/
 
 r.get('/:id', obterAlerta);
 
-r.get('/usuario/:nada', listarAlertasUsuario)
+r.get('/usuario/user', listarAlertasUsuario)
 
 r.put('/:id', atualizarAlerta);
 /*
@@ -28,6 +34,6 @@ r.put('/:id', atualizarAlerta);
 }
 */
 
-//r.delete('/:id', deletarAlerta);
+r.delete('/:id', deletarAlerta);
 
 export default r;

@@ -1,7 +1,9 @@
 import { prisma } from "../prisma.js";
-import { validarEmail, validarSenha, hashSenha, roundTo2, validarSessao, criaSessao, destruirSessao, verificarSenha, diferencaEntreDatas } from "../utils.js";
+import { validarEmail, validarSenha, hashSenha, roundTo2, verificarSenha, diferencaEntreDatas, verificarToken, verificarTokenDoCorpo } from "../utils.js";
+import jwt from 'jsonwebtoken';
 
 // Para testes
+/*
 export async function criptografarSenha(req, res) {
     try {
         const senha = req.params.senha;
@@ -12,22 +14,108 @@ export async function criptografarSenha(req, res) {
         return res.status(500).json({ error: 'Erro ao criptografar senha' });
     }
 }
+*/
 
-// Validado (26/08)
+// Validar
+/*
+export async function logout(req, res) {
+    try {
+        logout(); // Remove o token JWT do armazenamento do navegador
+        return res.status(200).json({ ok: true, message: 'Usuário deslogado com sucesso' });
+    } catch (e) {
+        console.error(e);
+        return res.status(500).json({ error: 'Erro ao encerrar sessão' });
+    }
+}
+s*/
+
+// Validado (26/08) - Desativar (Apenas para testes)
+/*
+export async function obterUsuarios(req, res) {
+    try {
+        const usuarios = await prisma.usuarios.findMany();
+        return res.json(usuarios);
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ error: "Erro ao obter usuários" });
+    }
+}
+*/
+
+// Validado (14/09/25) - Obter usuário por e-mail
+/*
+export async function obterUsuarioEmail(req, res) {
+    try {
+
+        let dadosUsuario = null;
+        if (! await verificarToken(req)) {
+            return res.status(401).json({ error: 'Usuário não autenticado' });
+        } else {
+            dadosUsuario = await verificarToken(req);
+        }
+
+        const UsuarioEmail = req.params.email;
+
+        const UsuarioId = Number(dadosUsuario.UsuarioId);
+
+        if (!dadosUsuario.tipo) {
+            return res.status(403).json({ error: "Token iválido para usuário" });
+        }
+
+        if (dadosUsuario.tipo !== 'usuario') {
+            return res.status(403).json({ error: "Token iválido para usuário" });
+        }
+
+        if (!UsuarioEmail) {
+            return res.status(400).json({ error: 'E-mail é obrigatório' });
+        }
+
+        const usuario = await prisma.usuarios.findUnique({
+            where: {
+                UsuarioEmail: UsuarioEmail,
+                UsuarioId: UsuarioId
+            },
+            select: {
+                UsuarioNome: true,
+                UsuarioEmail: true,
+                UsuarioDtNascimento: true,
+                UsuarioPeso: true,
+                UsuarioAltura: true,
+                UsuarioSexo: true,
+                UsuarioFoto: true,
+                UsuarioPesoMaximoPorcentagem: true
+            }
+        });
+
+        if (!usuario) {
+            return res.status(404).json({ error: 'Usuário não encontrado ou não autorizado a obter os seus dados' });
+        }
+
+        return res.status(200).json(usuario);
+    } catch (e) {
+        console.error(e);
+        return res.status(500).json({ error: 'Erro ao obter usuário por e-mail' });
+    } finally {
+        await prisma.$disconnect();
+    }
+}
+*/
+
+// Validado (14/09/25) - Criar usuário
 export async function criarUsuario(req, res) {
-    try{
-        const { UsuarioNome, UsuarioEmail, UsuarioSenha, UsuarioDtNascimento,  UsuarioPeso, UsuarioAltura, UsuarioSexo, UsuarioFoto, UsuarioPesoMaximoPorcentagem } = req.body;
+    try {
+        const { UsuarioNome, UsuarioEmail, UsuarioSenha, UsuarioDtNascimento, UsuarioPeso, UsuarioAltura, UsuarioSexo, UsuarioFoto, UsuarioPesoMaximoPorcentagem } = req.body;
 
         if (!UsuarioNome || UsuarioNome.trim() === "") {
             return res.status(409).json({ error: "Nome não pode ser nulo" });
-        }else if (UsuarioNome.trim().length < 3 || UsuarioNome.trim().length > 100) {
+        } else if (UsuarioNome.trim().length < 3 || UsuarioNome.trim().length > 100) {
             return res.status(409).json({ error: "Nome deve ter entre 3 e 100 caracteres" });
         }
 
         if (!UsuarioEmail || UsuarioEmail.trim() === "") {
             return res.status(409).json({ error: "E-mail não pode ser nulo" });
-        }else{
-            if (!validarEmail(UsuarioEmail.trim())){
+        } else {
+            if (!validarEmail(UsuarioEmail.trim())) {
                 return res.status(409).json({ error: "E-mail inválido" });
             }
 
@@ -35,7 +123,7 @@ export async function criarUsuario(req, res) {
                 where: { UsuarioEmail: UsuarioEmail.trim() }
             });
 
-            if (emailExistente){
+            if (emailExistente) {
                 return res.status(409).json({ error: "E-mail já cadastrado" });
             }
 
@@ -45,57 +133,57 @@ export async function criarUsuario(req, res) {
         }
 
         const dataNascimento = new Date(UsuarioDtNascimento);
-        if (!UsuarioDtNascimento){
+        if (!UsuarioDtNascimento) {
             return res.status(409).json({ error: "Data de Nacimento não pode ser nula" });
-        }else{
+        } else {
             const diferencaDatas = diferencaEntreDatas(dataNascimento, new Date(), 'anos', false);
             if (diferencaDatas < 3) {
                 return res.status(409).json({ error: "Usuário deve ter pelo menos 3 anos para se usar uma mochila nas costas" });
             }
         }
 
-        if (!UsuarioPeso){
+        if (!UsuarioPeso) {
             return res.status(409).json({ error: "Peso não pode ser nulo" });
-        }else if (UsuarioPeso < 9){
+        } else if (UsuarioPeso < 9) {
             return res.status(409).json({ error: "Peso mínimo para se carregar uma mochila é de 9kg" });
         }
 
-        if (!UsuarioAltura){
+        if (!UsuarioAltura) {
             return res.status(409).json({ error: "Altura não pode ser nula" });
-        }else if (UsuarioAltura < 0.80){
+        } else if (UsuarioAltura < 0.80) {
             return res.status(409).json({ error: "Altura mínima para se carregar uma mochila é de 80cm / 0,80 metros" });
         }
 
         if (!UsuarioSexo || UsuarioSexo.trim() === "") {
             return res.status(409).json({ error: "Sexo não pode ser nulo" });
-        }else if (UsuarioSexo.trim() !== "Masculino" && UsuarioSexo.trim() !== "Feminino" && UsuarioSexo.trim() !== "Outro" && UsuarioSexo.trim() !== "Prefiro não dizer") {
+        } else if (UsuarioSexo.trim() !== "Masculino" && UsuarioSexo.trim() !== "Feminino" && UsuarioSexo.trim() !== "Outro" && UsuarioSexo.trim() !== "Prefiro não dizer") {
             return res.status(409).json({ error: "Sexo deve ser 'Masculino', 'Feminino', 'Prefiro não dizer' ou 'Outro'" });
         }
 
         let senhaHash = '';
-        if (!UsuarioSenha){
+        if (!UsuarioSenha) {
             return res.status(409).json({ error: "Senha não pode ser nula" });
-        }else{
+        } else {
             const resultadoSenha = await validarSenha(UsuarioSenha.trim());
 
-            if (!resultadoSenha.valido){
+            if (!resultadoSenha.valido) {
                 return res.status(409).json({ error: resultadoSenha.erro });
-            }else{
+            } else {
                 senhaHash = await hashSenha(UsuarioSenha.trim());
             }
         }
 
         let UsuarioPesoMaximoPorCad;
-        if (!UsuarioPesoMaximoPorcentagem){
+        if (!UsuarioPesoMaximoPorcentagem) {
             UsuarioPesoMaximoPorCad = 10; // Valor padrão de 10%
-        }else{
+        } else {
             UsuarioPesoMaximoPorCad = UsuarioPesoMaximoPorcentagem;
         }
 
         let usuarioFotoCad;
-        if (!UsuarioFoto){
+        if (!UsuarioFoto) {
             usuarioFotoCad = null;
-        }else{
+        } else {
             usuarioFotoCad = UsuarioFoto.trim();
         }
 
@@ -118,110 +206,97 @@ export async function criarUsuario(req, res) {
             }
         });
 
-        return res.status(201).json(usuario);
-        //return res.status(201).json({ ok: true, message: 'Usuário criado com sucesso'});
-    }catch(e){
+        //return res.status(201).json(usuario);
+        return res.status(201).json({ ok: true, message: 'Usuário criado com sucesso' });
+    } catch (e) {
         console.error(e);
         return res.status(500).json({ error: 'Erro ao cadastrar usuário' });
+    } finally {
+        await prisma.$disconnect();
     }
 }
 
-// Validado (26/08)
-export async function obterUsuarioEmail(req, res) {
-    try{
+// Validado (14/09/25) - Obter usuário logado
+export async function obterUsuarioLogado(req, res) {
+    try {
 
-        if (!validarSessao(req)) {
+        let dadosUsuario = null;
+        if (! await verificarToken(req)) {
             return res.status(401).json({ error: 'Usuário não autenticado' });
+        } else {
+            dadosUsuario = await verificarToken(req);
         }
 
-        const UsuarioEmail = req.params.email;
+        const UsuarioIdLogado = Number(dadosUsuario.UsuarioId);
 
-        if (!UsuarioEmail) {
-            return res.status(400).json({ error: 'E-mail é obrigatório' });
+        if(!dadosUsuario.tipo){
+        return res.status(403).json({ error: "Token iválido para usuário" });
+        }
+
+        if (dadosUsuario.tipo !== 'usuario'){
+        return res.status(403).json({ error: "Token iválido para usuário" });
         }
 
         const usuario = await prisma.usuarios.findUnique({
-            where: { 
-                UsuarioEmail: UsuarioEmail,
-                UsuarioId: Number(req.session.usuario.id)
+            where: {
+                UsuarioId: UsuarioIdLogado
+            },
+            select: {
+                UsuarioNome: true,
+                UsuarioEmail: true,
+                UsuarioDtNascimento: true,
+                UsuarioPeso: true,
+                UsuarioAltura: true,
+                UsuarioSexo: true,
+                UsuarioFoto: true,
+                UsuarioPesoMaximoPorcentagem: true
             }
         });
 
         if (!usuario) {
-            return res.status(404).json({ error: 'Usuário não encontrado ou não autorizado a obter os seus dados' });
-        }
-
-        return res.status(200).json(usuario);
-    }catch(e){
-        console.error(e);
-        return res.status(500).json({ error: 'Erro ao obter usuário por e-mail' });
-    }
-}
-
-// Validado (26/08)
-export async function obterUsuarioId(req, res) {
-    try{
-
-        if (!validarSessao(req)) {
-            return res.status(401).json({ error: 'Usuário não autenticado' });
-        }
-
-        const UsuarioId = Number(req.params.id);
-
-        if (!UsuarioId) {
-            return res.status(400).json({ error: 'Id é obrigatório' });
-        }
-
-        const usuario = await prisma.usuarios.findFirst({
-            where: { 
-                AND: [
-                    { UsuarioId: UsuarioId },
-                    { UsuarioId: Number(req.session.usuario.id) } // Verifica se o usuário está autenticado
-                ]
-            }
-        });
-        if (!usuario) {
-            return res.status(404).json({ error: 'Usuário não encontrado ou não autorizado a obter os seus dados' });
+            return res.status(404).json({ error: 'Usuário não encontrado' });
         }
 
         //return res.status(200).json({ ok: true, message: 'Usuário encontrado', usuario });
         return res.status(200).json(usuario);
 
-    }catch(e){
+    } catch (e) {
         console.error(e);
         return res.status(500).json({ error: 'Erro ao obter usuário por id' });
+    } finally {
+        await prisma.$disconnect();
     }
 }
 
-// Apenas para testes (deve ser removido ou protegido em produção) - Validado (26/08)
-export async function obterUsuarios(req, res) {
-    try {
-        const usuarios = await prisma.usuarios.findMany();
-        return res.json(usuarios);
-    } catch (error) {
-        console.error(error);
-        return res.status(500).json({ error: "Erro ao obter usuários" });
-    }
-}
-
-// Implementar depois armazenagem da foto - Validado (26/08)
+// Validado (14/09/25) - Alterar usuário
 export async function alterarUsuario(req, res) {
-    try{
+    try {
 
-        if (!validarSessao(req)) {
+        let dadosUsuario = null;
+        if (! await verificarToken(req)) {
             return res.status(401).json({ error: 'Usuário não autenticado' });
+        } else {
+            dadosUsuario = await verificarToken(req);
         }
 
-        const { UsuarioNome, UsuarioEmail, UsuarioSenha, UsuarioDtNascimento,  UsuarioPeso, UsuarioAltura, UsuarioSexo, UsuarioFoto, UsuarioPesoMaximoPorcentagem } = req.body;
+        if(!dadosUsuario.tipo){
+        return res.status(403).json({ error: "Token iválido para usuário" });
+        }
 
-        const UsuarioId =  Number(req.session.usuario.id);
+        if (dadosUsuario.tipo !== 'usuario'){
+        return res.status(403).json({ error: "Token iválido para usuário" });
+        }
+
+        const { UsuarioNome, UsuarioEmail, UsuarioSenha, UsuarioDtNascimento, UsuarioPeso, UsuarioAltura, UsuarioSexo, UsuarioFoto, UsuarioPesoMaximoPorcentagem } = req.body;
+
+        const UsuarioId = Number(dadosUsuario.UsuarioId);
 
         let usuarioExistente;
         if (!UsuarioId) {
             return res.status(400).json({ error: 'Usuário não autenticado' });
-        }else{
+        } else {
             usuarioExistente = await prisma.usuarios.findUnique({
-                where: { UsuarioId: UsuarioId, UsuarioStatus: { not: 'Excluido', not: 'Suspenso'  } } // Verifica se o usuário está ativo
+                where: { UsuarioId: UsuarioId, UsuarioStatus: { not: 'Suspenso' } } // Verifica se o usuário está ativo
             });
 
             if (!usuarioExistente) {
@@ -231,90 +306,90 @@ export async function alterarUsuario(req, res) {
 
         if (!UsuarioNome || UsuarioNome.trim() === "") {
             return res.status(409).json({ error: "Nome não pode ser nulo" });
-        }else if (UsuarioNome.trim().length < 3 || UsuarioNome.trim().length > 100) {
+        } else if (UsuarioNome.trim().length < 3 || UsuarioNome.trim().length > 100) {
             return res.status(409).json({ error: "Nome deve ter entre 3 e 100 caracteres" });
         }
 
         if (!UsuarioEmail || UsuarioEmail.trim() === "") {
             return res.status(409).json({ error: "E-mail não pode ser nulo" });
-        }else{
-            if (!validarEmail(UsuarioEmail)){
+        } else {
+            if (!validarEmail(UsuarioEmail)) {
                 return res.status(409).json({ error: "E-mail inválido" });
             }
 
             const emailExistente = await prisma.usuarios.findFirst({
-                where: { 
+                where: {
                     UsuarioEmail: UsuarioEmail,
                     UsuarioId: { not: UsuarioId } // Verifica se o e-mail já está cadastrado, mas não para o próprio usuário
                 }
             });
 
-            if (emailExistente){
+            if (emailExistente) {
                 return res.status(409).json({ error: "E-mail já cadastrado" });
             }
         }
 
         const dataNascimento = new Date(UsuarioDtNascimento);
-        if (!UsuarioDtNascimento){
+        if (!UsuarioDtNascimento) {
             return res.status(409).json({ error: "Data de Nascimento não pode ser nula" });
-        }else{
+        } else {
             const diferencaDatas = diferencaEntreDatas(dataNascimento, new Date(), 'anos', false);
             if (diferencaDatas < 3) {
                 return res.status(409).json({ error: "Usuário deve ter pelo menos 3 anos para se usar uma mochila nas costas" });
             }
         }
 
-        if (!UsuarioPeso){
+        if (!UsuarioPeso) {
             return res.status(409).json({ error: "Peso não pode ser nulo" });
-        }else if (UsuarioPeso < 9){
+        } else if (UsuarioPeso < 9) {
             return res.status(409).json({ error: "Peso mínimo para se carregar uma mochila é de 9kg" });
         }
 
-        if (!UsuarioAltura){
+        if (!UsuarioAltura) {
             return res.status(409).json({ error: "Altura não pode ser nula" });
-        }else if (UsuarioAltura < 0.80){
+        } else if (UsuarioAltura < 0.80) {
             return res.status(409).json({ error: "Altura mínima para se carregar uma mochila é de 80cm / 0,80 metros" });
         }
 
         if (!UsuarioSexo || UsuarioSexo.trim() === "") {
             return res.status(409).json({ error: "Sexo não pode ser nulo" });
-        }else if (UsuarioSexo.trim() !== "Masculino" && UsuarioSexo.trim() !== "Feminino" && UsuarioSexo.trim() !== "Outro" && UsuarioSexo.trim() !== "Prefiro não dizer") {
+        } else if (UsuarioSexo.trim() !== "Masculino" && UsuarioSexo.trim() !== "Feminino" && UsuarioSexo.trim() !== "Outro" && UsuarioSexo.trim() !== "Prefiro não dizer") {
             return res.status(409).json({ error: "Sexo deve ser 'Masculino', 'Feminino', 'Prefiro não dizer' ou 'Outro'" });
         }
 
         let senhaHash = '';
-        if (!UsuarioSenha){
+        if (!UsuarioSenha) {
             return res.status(409).json({ error: "Senha não pode ser nula" });
-        }else{
+        } else {
             const resultadoSenha = await validarSenha(UsuarioSenha);
 
-            if (!resultadoSenha.valido){
+            if (!resultadoSenha.valido) {
                 return res.status(409).json({ error: resultadoSenha.erro });
-            }else{
+            } else {
                 senhaHash = await hashSenha(UsuarioSenha.trim());
             }
         }
 
         let UsuarioPesoMaximoPorCad;
-        if (!UsuarioPesoMaximoPorcentagem){
+        if (!UsuarioPesoMaximoPorcentagem) {
             UsuarioPesoMaximoPorCad = 10; // Valor padrão de 10%
-        }else{
+        } else {
             UsuarioPesoMaximoPorCad = UsuarioPesoMaximoPorcentagem;
         }
 
         const UsuarioStatus = "Ativo"; // Status padrão
 
         let fotoAtualizada;
-        if (UsuarioFoto){
+        if (UsuarioFoto) {
             if (UsuarioFoto.trim() === "deletar") {
                 // Se o usuário quiser deletar a foto, define como null
                 fotoAtualizada = null;
-            }else if (UsuarioFoto.trim() === "null" || UsuarioFoto.trim() === "") {
+            } else if (UsuarioFoto.trim() === "null" || UsuarioFoto.trim() === "") {
                 fotoAtualizada = usuarioExistente.UsuarioFoto; // Mantém a foto atual se não for especificado
-            }else{
+            } else {
                 fotoAtualizada = UsuarioFoto.trim(); // Atualiza com a nova foto
             }
-        }else{
+        } else {
             fotoAtualizada = usuarioExistente.UsuarioFoto; // Mantém a foto atual se não for especificado
         }
 
@@ -336,19 +411,21 @@ export async function alterarUsuario(req, res) {
             }
         });
 
-        //return res.status(200).json({ ok: true, message: 'Usuário atualizado com sucesso' });
-        return res.status(200).json(usuario);
+        return res.status(200).json({ ok: true, message: 'Usuário atualizado com sucesso' });
+        //return res.status(200).json(usuario);
 
-    }catch(e){
+    } catch (e) {
         console.error(e);
         return res.status(500).json({ error: 'Erro ao alterar usuário' });
+    } finally {
+        await prisma.$disconnect();
     }
 }
 
-// Validado (27/08)
+// Validado (14/09/25) - Login
 export async function login(req, res) {
     try {
-        const { UsuarioEmail, UsuarioSenha } = req.body;
+        const { UsuarioEmail, UsuarioSenha, TipoLogin } = req.body;
 
         if (!UsuarioEmail) {
             return res.status(400).json({ error: 'E-mail é obrigatório' });
@@ -358,8 +435,14 @@ export async function login(req, res) {
             return res.status(400).json({ error: 'Senha é obrigatória' });
         }
 
+        if (!TipoLogin) {
+            return res.status(400).json({ error: 'Informe de onde vem a requisição (App ou Web)' });
+        }else if (TipoLogin !== 'App' && TipoLogin !== 'Web') {
+            return res.status(400).json({ error: 'Tipo de login inválido. Use "App" ou "Web"' });
+        }
+
         const usuario = await prisma.usuarios.findUnique({
-            where: { 
+            where: {
                 UsuarioEmail: UsuarioEmail
             }
         });
@@ -368,9 +451,7 @@ export async function login(req, res) {
             return res.status(404).json({ error: 'Usuário não encontrado' });
         }
 
-        if (usuario.UsuarioStatus === 'Excluido') {
-            return res.status(403).json({ error: 'Usuário não encontrado' });
-        }else if (usuario.UsuarioStatus === 'Suspenso') {
+        if (usuario.UsuarioStatus === 'Suspenso') {
             return res.status(403).json({ error: 'Usuário suspenso. Contate o suporte.' });
         }
 
@@ -385,47 +466,105 @@ export async function login(req, res) {
         });
 
         // Cria a sessão do usuário
-        await criaSessao(req, usuario.UsuarioId, usuario.UsuarioEmail);
-        
-        return res.status(200).json({ ok: true, message: 'Login realizado com sucesso', usuarioId: usuario.UsuarioId });
+        //await criaSessao(req, usuario.UsuarioId, usuario.UsuarioEmail);
+
+        const payload = {
+            UsuarioId: usuario.UsuarioId,
+            UsuarioEmail: usuario.UsuarioEmail,
+            tipo: 'usuario' // Adiciona um tipo para diferenciar do token de IoT
+        };
+
+        // 1. Gerar o token de acesso (curta duração)
+        const accessToken = jwt.sign(payload, process.env.SECRET_KEY, { expiresIn: '15m' });
+
+        // 2. Gerar o token de refresh (longa duração)
+        let refreshToken;
+        if (TipoLogin === 'App') {
+            refreshToken = jwt.sign(payload, process.env.SECRET_KEY, { expiresIn: '60d' });
+        } else if (TipoLogin === 'Web') {
+            refreshToken = jwt.sign(payload, process.env.SECRET_KEY, { expiresIn: '1d' });
+        }
+
+        // 3. Retornar ambos os tokens para o cliente
+        return res.status(200).json({
+            ok: true,
+            message: 'Login realizado com sucesso.',
+            accessToken: accessToken,
+            refreshToken: refreshToken
+        });
 
     } catch (e) {
         console.error(e);
         return res.status(500).json({ error: 'Erro ao realizar login' });
+    } finally {
+        await prisma.$disconnect();
     }
 }
 
-// Validado (26/08)
+// Validado (20/09/25) - Logout
+// Esta rota recebe um Refresh Token e o adiciona à blacklist
+// para que ele não possa mais ser usado, mesmo que não tenha expirado.
 export async function logout(req, res) {
     try {
-        if (!validarSessao(req)) {
-            return res.status(401).json({ error: 'Usuário não autenticado' });
+
+        const refreshToken = verificarTokenDoCorpo(req);
+
+        if (!refreshToken) {
+            return res.status(400).json({ error: 'Token de refresh não fornecido.' });
         }
-        if (!destruirSessao(req)) {
-            return res.status(500).json({ error: 'Erro ao encerrar sessão (função)' });
-        }
-        return res.status(200).json({ ok: true, message: 'Sessão encerrada com sucesso' });
+
+        // Tenta adicionar o token à tabela de tokens revogados
+        await prisma.tokensRevogados.create({
+            data: {
+                token: refreshToken
+            }
+        });
+
+        // O token foi revogado com sucesso.
+        return res.status(200).json({ ok: true, message: 'Sessão encerrada com sucesso.' });
+
     } catch (e) {
-        console.error(e);
-        return res.status(500).json({ error: 'Erro ao encerrar sessão' });
+        // Se o token já estiver na tabela, o Prisma lançará um erro de violação de chave primária.
+        // Neste caso, tratamos como sucesso, pois o token já estava revogado.
+        if (e instanceof PrismaClientKnownRequestError && e.code === 'P2002') {
+            return res.status(200).json({ ok: true, message: 'Sessão já estava encerrada.' });
+        }
+
+        console.error("Erro ao revogar o token:", e);
+        return res.status(500).json({ error: 'Erro interno do servidor.' });
+
+    } finally {
+        await prisma.$disconnect();
     }
 }
 
-// Validado (27/08)
+// Validado (14/09/25) - Excluir usuário
 export async function excluirUsuario(req, res) {
     try {
 
-        if (!validarSessao(req)) {
+        let usuario = null;
+        if (! await verificarToken(req)) {
             return res.status(401).json({ error: 'Usuário não autenticado' });
+        } else {
+            usuario = await verificarToken(req);
         }
 
-        const UsuarioId = req.session.usuario.id;  
+        const UsuarioId = Number(usuario.UsuarioId);
+
+        if(!usuario.tipo){
+        return res.status(403).json({ error: "Token iválido para usuário" });
+        }
+
+        if (usuario.tipo !== 'usuario'){
+        return res.status(403).json({ error: "Token iválido para usuário" });
+        }
+
         if (!UsuarioId) {
             return res.status(400).json({ error: 'Usuário não autenticado' });
         }
 
         const usuarioExistente = await prisma.usuarios.findUnique({
-            where: { UsuarioId: UsuarioId, NOT: { UsuarioStatus: 'Excluido' } } // Verifica se o usuário não está excluído
+            where: { UsuarioId: UsuarioId } // Verifica se o usuário não está excluído
         });
 
         if (!usuarioExistente) {
@@ -435,26 +574,22 @@ export async function excluirUsuario(req, res) {
         const UsuarioSenha = req.body.UsuarioSenha;
         if (!UsuarioSenha || UsuarioSenha.trim() === "") {
             return res.status(400).json({ error: 'Senha é obrigatória para exclusão' });
-        }else{
+        } else {
             if (!await verificarSenha(UsuarioSenha.trim(), usuarioExistente.UsuarioSenha)) {
                 return res.status(401).json({ error: 'Senha incorreta' });
             }
         }
 
         // Atualiza o status do usuário para "Excluido"
-        await prisma.usuarios.update({
-            where: { UsuarioId: UsuarioId },
-            data: { UsuarioStatus: "Excluido" }
+        await prisma.usuarios.delete({
+            where: { UsuarioId: UsuarioId }
         });
 
-        // Destrói a sessão do usuário
-        if (!destruirSessao(req)) {
-            return res.status(500).json({ error: 'Erro ao encerrar sessão (função)' });
-        }
-
-        return res.status(200).json({ ok: true, message: 'Usuário excluído com sucesso'});
+        return res.status(200).json({ ok: true, message: 'Usuário excluído com sucesso' });
     } catch (e) {
         console.error(e);
         return res.status(500).json({ error: 'Erro ao excluir usuário' });
+    } finally {
+        await prisma.$disconnect();
     }
 }
