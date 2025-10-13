@@ -70,13 +70,17 @@ export async function criarMedicao(req, res) {
     let MedicaoStatus, MedicaoPesoMais;
 
     let dadosMochila = null;
-    if(! await verificarToken(req)){
-        return res.status(401).json({ error: 'Mochila não autenticada' });
-    }else{
-        dadosMochila = await verificarToken(req);
+    if (! await verificarToken(req)) {
+      return res.status(401).json({ error: 'Mochila não autenticada' });
+    } else {
+      dadosMochila = await verificarToken(req);
     }
 
-    let MochilaId =  Number(dadosMochila.MochilaId);
+    if (dadosMochila.tipo !== 'iot'){
+      return res.status(403).json({ error: "Token iválido para mochila" });
+    }
+
+    let MochilaId = Number(dadosMochila.MochilaId);
 
     const mochila = await prisma.mochilas.findUnique({ where: { MochilaId: MochilaId } });
     if (!mochila) {
@@ -96,7 +100,7 @@ export async function criarMedicao(req, res) {
 
     if (!MedicaoLocal || MedicaoLocal.trim() === "") {
       return res.status(400).json({ error: 'Local é obrigatório' });
-    }else{
+    } else {
       if (MedicaoLocal.trim() !== "esquerda" && MedicaoLocal.trim() !== "direita" && MedicaoLocal.trim() !== "ambos" && MedicaoLocal.trim() !== "centro") {
         return res.status(400).json({ error: 'Local deve ser "esquerda", "direita", "centro" ou "ambos"' });
       }
@@ -106,10 +110,10 @@ export async function criarMedicao(req, res) {
 
     // Tenta achar usuário ativo na mochila
     const usuarioMochila = await prisma.usuariosMochilas.findFirst({
-      where: { 
-        MochilaId: mochila.MochilaId, 
+      where: {
+        MochilaId: mochila.MochilaId,
         OR: [
-          { UsoStatus: 'Usando' }, 
+          { UsoStatus: 'Usando' },
           { UsoStatus: 'Último a Usar' }
         ]
       }
@@ -192,7 +196,7 @@ export async function criarMedicao(req, res) {
           UsuarioId: uId
         }
       });
-    }else if (MedicaoStatus === 'Acima do limite da Mochila') {
+    } else if (MedicaoStatus === 'Acima do limite da Mochila') {
       await prisma.alertas.create({
         data: {
           MedicaoId: medicao.MedicaoId,
@@ -206,7 +210,7 @@ export async function criarMedicao(req, res) {
       });
     }
 
-    if (usuarioMochila.UsoStatus === 'Último a Usar'){
+    if (usuarioMochila.UsoStatus === 'Último a Usar') {
       await prisma.usuariosMochilas.update({
         where: { UsuarioId_MochilaId: { UsuarioId: uId, MochilaId: mId } },
         data: { UsoStatus: 'Usando', DataInicioUso: new Date(), DataFimUso: null }
@@ -215,12 +219,133 @@ export async function criarMedicao(req, res) {
 
     return res.status(201).json({ ok: true, message: 'Medição registrada com sucesso' });
     //return res.status(201).json(medicao);
-    
+
   } catch (e) {
     console.error(e);
     return res.status(500).json({ error: 'Erro ao registrar medição' });
   } finally {
-      await prisma.$disconnect();
+    await prisma.$disconnect();
+  }
+}
+
+// Validar
+export async function obterUltimaMedicaoMochilaUsuario(req, res) {
+  try {
+
+    let usuario = null;
+    if (! await verificarToken(req)) {
+      return res.status(401).json({ error: 'Usuário não autenticado' });
+    } else {
+      usuario = await verificarToken(req);
+    }
+
+    const UsuarioId = Number(usuario.UsuarioId);
+
+    if (!usuario.tipo) {
+      return res.status(403).json({ error: "Token iválido para usuário" });
+    }
+
+    if (usuario.tipo !== 'usuario') {
+      return res.status(403).json({ error: "Token iválido para usuário" });
+    }
+
+    if (!UsuarioId || isNaN(UsuarioId)) {
+      return res.status(400).json({ error: "ID do usuário inválido" + UsuarioId });
+    }
+
+    const dadosusuario = await prisma.usuarios.findUnique({ where: { UsuarioId: UsuarioId } });
+
+    if (!dadosusuario) {
+      return res.status(404).json({ error: 'Usuário não encontrado' });
+    }
+
+    const MachilaCodigo = req.params.mochila;
+
+    if (!MachilaCodigo || MachilaCodigo.trim() === '') {
+      return res.status(400).json({ error: "Informe o código da mochila" });
+    }
+
+    const mochila = await prisma.mochilas.findUnique({ where: { MochilaCodigo: MachilaCodigo } });
+
+    if (!mochila) {
+      return res.status(404).json({ error: 'Mochila não encontrada' });
+    }
+
+    const medicaoEsquerda = await prisma.medicoes.findFirst({
+      where: {
+        UsuarioId: UsuarioId,
+        MochilaId: mochila.MochilaId,
+        MedicaoLocal: 'esquerda'
+      },
+      orderBy: { MedicaoData: 'desc' },
+      select: {
+        MedicaoPeso: true,
+        MedicaoData: true,
+        MedicaoStatus: true,
+        MedicaoLocal: true,
+        MedicaoPesoMaximoPorcentagem: true,
+        MedicaoPesoMais: true
+      },
+    });
+
+    const medicaoDireita = await prisma.medicoes.findFirst({
+      where: {
+        UsuarioId: UsuarioId,
+        MochilaId: mochila.MochilaId,
+        MedicaoLocal: 'direita'
+      },
+      orderBy: { MedicaoData: 'desc' },
+      select: {
+        MedicaoPeso: true,
+        MedicaoData: true,
+        MedicaoStatus: true,
+        MedicaoLocal: true,
+        MedicaoPesoMaximoPorcentagem: true,
+        MedicaoPesoMais: true
+      },
+    });
+
+    const medicaoAmbos = await prisma.medicoes.findFirst({
+      where: {
+        UsuarioId: UsuarioId,
+        MochilaId: mochila.MochilaId,
+        MedicaoLocal: 'ambos'
+      },
+      orderBy: { MedicaoData: 'desc' },
+      select: {
+        MedicaoPeso: true,
+        MedicaoData: true,
+        MedicaoStatus: true,
+        MedicaoLocal: true,
+        MedicaoPesoMaximoPorcentagem: true,
+        MedicaoPesoMais: true
+      },
+    });
+
+    const medicaoCentro = await prisma.medicoes.findFirst({
+      where: {
+        UsuarioId: UsuarioId,
+        MochilaId: mochila.MochilaId,
+        MedicaoLocal: 'centro'
+      },
+      orderBy: { MedicaoData: 'desc' },
+      select: {
+        MedicaoPeso: true,
+        MedicaoData: true,
+        MedicaoStatus: true,
+        MedicaoLocal: true,
+        MedicaoPesoMaximoPorcentagem: true,
+        MedicaoPesoMais: true
+      },
+    });
+
+    return res.status(200).json({ ok: true, esquerda: medicaoEsquerda, direita: medicaoDireita, ambos: medicaoAmbos, centro: medicaoCentro });
+
+  } catch (e) {
+    console.error(e);
+    return res.status(500).json({ error: 'Erro ao buscar medições' });
+  } finally {
+    await prisma.$disconnect();
   }
 }
 
@@ -231,22 +356,22 @@ export async function obterRelatorioSemanal(req, res) {
 
     let usuario = null;
     if (! await verificarToken(req)) {
-        return res.status(401).json({ error: 'Usuário não autenticado' });
-    }else{
-        usuario = await verificarToken(req);
+      return res.status(401).json({ error: 'Usuário não autenticado' });
+    } else {
+      usuario = await verificarToken(req);
     }
 
     const UsuarioId = Number(usuario.UsuarioId);
 
-    if(!usuario.tipo){
+    if (!usuario.tipo) {
       return res.status(403).json({ error: "Token iválido para usuário" });
     }
 
-    if (usuario.tipo !== 'usuario'){
+    if (usuario.tipo !== 'usuario') {
       return res.status(403).json({ error: "Token iválido para usuário" });
     }
 
-    if (!UsuarioId || isNaN(UsuarioId)){
+    if (!UsuarioId || isNaN(UsuarioId)) {
       return res.status(400).json({ error: "ID do usuário inválido" });
     }
 
@@ -270,8 +395,8 @@ export async function obterRelatorioSemanal(req, res) {
 
     // Verificar vinculo entre usuário e mochila
     const usuarioMochila = await prisma.usuariosMochilas.findFirst({
-      where: { 
-        UsuarioId: UsuarioId, 
+      where: {
+        UsuarioId: UsuarioId,
         MochilaId: mochila.MochilaId
       }
     });
@@ -292,12 +417,12 @@ export async function obterRelatorioSemanal(req, res) {
     hojeEmBrasilia.setDate(hojeEmBrasilia.getDate() - 7);
 
     const medicoes = await prisma.medicoes.findMany({
-      where: { 
+      where: {
         UsuarioId: UsuarioId,
         MochilaId: mochila.MochilaId,
-        MedicaoData: { gte: hojeEmBrasilia } 
+        MedicaoData: { gte: hojeEmBrasilia }
       },
-      select:{
+      select: {
         MedicaoPeso: true,
         MedicaoData: true,
         MedicaoStatus: true,
@@ -319,7 +444,7 @@ export async function obterRelatorioSemanal(req, res) {
     console.error(e);
     return res.status(500).json({ error: 'Erro ao buscar relatório semanal' });
   } finally {
-      await prisma.$disconnect();
+    await prisma.$disconnect();
   }
 }
 
@@ -330,22 +455,22 @@ export async function obterRelatorioMensal(req, res) {
 
     let usuario = null;
     if (! await verificarToken(req)) {
-        return res.status(401).json({ error: 'Usuário não autenticado' });
-    }else{
-        usuario = await verificarToken(req);
+      return res.status(401).json({ error: 'Usuário não autenticado' });
+    } else {
+      usuario = await verificarToken(req);
     }
 
     const UsuarioId = Number(usuario.UsuarioId);
 
-    if(!usuario.tipo){
+    if (!usuario.tipo) {
       return res.status(403).json({ error: "Token iválido para usuário" });
     }
 
-    if (usuario.tipo !== 'usuario'){
+    if (usuario.tipo !== 'usuario') {
       return res.status(403).json({ error: "Token iválido para usuário" });
     }
 
-    if (!UsuarioId || isNaN(UsuarioId)){
+    if (!UsuarioId || isNaN(UsuarioId)) {
       return res.status(400).json({ error: "ID do usuário inválido" + UsuarioId });
     }
 
@@ -369,7 +494,7 @@ export async function obterRelatorioMensal(req, res) {
 
     const { mes, ano } = req.params; // Ex: /mensal/2025/08
     if (!mes || isNaN(mes) || !ano || isNaN(ano)) {
-        return res.status(400).json({ error: "Informe mês e ano" });
+      return res.status(400).json({ error: "Informe mês e ano" });
     }
 
     // A validação de mes e ano pode ser simplificada.
@@ -390,15 +515,15 @@ export async function obterRelatorioMensal(req, res) {
     fim.setMonth(fim.getMonth() + 1);
 
     const medicoes = await prisma.medicoes.findMany({
-        where: { 
-            UsuarioId: UsuarioId,
-            MochilaId: mochila.MochilaId,
-            MedicaoData: { 
-                gte: inicio, // >= primeiro dia do mês no Brasil
-                lt: fim // < primeiro dia do próximo mês no Brasil
-            }
-        },
-      select:{
+      where: {
+        UsuarioId: UsuarioId,
+        MochilaId: mochila.MochilaId,
+        MedicaoData: {
+          gte: inicio, // >= primeiro dia do mês no Brasil
+          lt: fim // < primeiro dia do próximo mês no Brasil
+        }
+      },
+      select: {
         MedicaoPeso: true,
         MedicaoData: true,
         MedicaoStatus: true,
@@ -409,17 +534,17 @@ export async function obterRelatorioMensal(req, res) {
       orderBy: { MedicaoData: 'desc' }
     });
 
-    if (medicoes.length === 0){
+    if (medicoes.length === 0) {
       return res.status(404).json({ error: 'Nenhuma medição encontrada no mês informado' });
     }
-    
+
     return res.status(200).json(medicoes);
 
   } catch (e) {
     console.error(e);
     return res.status(500).json({ error: 'Erro ao buscar relatório mensal' });
   } finally {
-      await prisma.$disconnect();
+    await prisma.$disconnect();
   }
 }
 
@@ -430,22 +555,22 @@ export async function obterRelatorioAnual(req, res) {
 
     let usuario = null;
     if (! await verificarToken(req)) {
-        return res.status(401).json({ error: 'Usuário não autenticado' });
-    }else{
-        usuario = await verificarToken(req);
+      return res.status(401).json({ error: 'Usuário não autenticado' });
+    } else {
+      usuario = await verificarToken(req);
     }
 
     const UsuarioId = Number(usuario.UsuarioId);
 
-    if(!usuario.tipo){
+    if (!usuario.tipo) {
       return res.status(403).json({ error: "Token iválido para usuário" });
     }
 
-    if (usuario.tipo !== 'usuario'){
+    if (usuario.tipo !== 'usuario') {
       return res.status(403).json({ error: "Token iválido para usuário" });
     }
 
-    if (!UsuarioId || isNaN(UsuarioId)){
+    if (!UsuarioId || isNaN(UsuarioId)) {
       return res.status(400).json({ error: "ID do usuário inválido" + UsuarioId });
     }
 
@@ -468,11 +593,11 @@ export async function obterRelatorioAnual(req, res) {
     }
 
     const { ano } = req.params;
-    if (!ano || isNaN(ano)){
+    if (!ano || isNaN(ano)) {
       return res.status(400).json({ error: "Informe o ano" });
     }
 
-    if (ano.length !== 4){
+    if (ano.length !== 4) {
       return res.status(400).json({ error: 'Ano inválido' });
     }
 
@@ -483,15 +608,15 @@ export async function obterRelatorioAnual(req, res) {
     const fim = new Date(`${parseInt(ano) + 1}-01-01T00:00:00-03:00`);
 
     const medicoes = await prisma.medicoes.findMany({
-      where: { 
+      where: {
         UsuarioId: UsuarioId,
         MochilaId: mochila.MochilaId,
-        MedicaoData: { 
+        MedicaoData: {
           gte: inicio, // >= 1 de janeiro do ano informado no Brasil
           lt: fim // < 1 de janeiro do ano seguinte no Brasil
-        } 
+        }
       },
-      select:{
+      select: {
         MedicaoPeso: true,
         MedicaoData: true,
         MedicaoStatus: true,
@@ -502,7 +627,7 @@ export async function obterRelatorioAnual(req, res) {
       orderBy: { MedicaoData: 'desc' }
     });
 
-    if (medicoes.length === 0){
+    if (medicoes.length === 0) {
       return res.status(404).json({ error: 'Nenhuma medição encontrada no ano informado' });
     }
 
@@ -512,7 +637,7 @@ export async function obterRelatorioAnual(req, res) {
     console.error(e);
     return res.status(500).json({ error: 'Erro ao buscar relatório anual' });
   } finally {
-      await prisma.$disconnect();
+    await prisma.$disconnect();
   }
 }
 
@@ -523,22 +648,22 @@ export async function obterRelatorioDia(req, res) {
 
     let usuario = null;
     if (! await verificarToken(req)) {
-        return res.status(401).json({ error: 'Usuário não autenticado' });
-    }else{
-        usuario = await verificarToken(req);
+      return res.status(401).json({ error: 'Usuário não autenticado' });
+    } else {
+      usuario = await verificarToken(req);
     }
 
     const UsuarioId = Number(usuario.UsuarioId);
 
-    if(!usuario.tipo){
+    if (!usuario.tipo) {
       return res.status(403).json({ error: "Token iválido para usuário" });
     }
 
-    if (usuario.tipo !== 'usuario'){
+    if (usuario.tipo !== 'usuario') {
       return res.status(403).json({ error: "Token iválido para usuário" });
     }
 
-    if (!UsuarioId || isNaN(UsuarioId)){
+    if (!UsuarioId || isNaN(UsuarioId)) {
       return res.status(400).json({ error: "ID do usuário inválido" + UsuarioId });
     }
 
@@ -575,15 +700,15 @@ export async function obterRelatorioDia(req, res) {
     fim.setDate(fim.getDate() + 1);
 
     const medicoes = await prisma.medicoes.findMany({
-      where: { 
+      where: {
         UsuarioId: UsuarioId,
         MochilaId: mochila.MochilaId,
-        MedicaoData: { 
+        MedicaoData: {
           gte: inicio, // >= meia-noite do dia informado no Brasil
           lt: fim // < meia-noite do dia seguinte no Brasil
-        } 
+        }
       },
-      select:{
+      select: {
         MedicaoPeso: true,
         MedicaoData: true,
         MedicaoStatus: true,
@@ -594,7 +719,7 @@ export async function obterRelatorioDia(req, res) {
       orderBy: { MedicaoData: 'desc' }
     });
 
-    if (medicoes.length === 0){
+    if (medicoes.length === 0) {
       return res.status(404).json({ error: 'Nenhuma medição encontrada no dia informado' });
     }
 
@@ -604,7 +729,7 @@ export async function obterRelatorioDia(req, res) {
     console.error(e);
     return res.status(500).json({ error: 'Erro ao buscar relatório diário' });
   } finally {
-      await prisma.$disconnect();
+    await prisma.$disconnect();
   }
 }
 
@@ -615,22 +740,22 @@ export async function obterDiaMaisMenosPeso(req, res) {
 
     let usuario = null;
     if (! await verificarToken(req)) {
-        return res.status(401).json({ error: 'Usuário não autenticado' });
-    }else{
-        usuario = await verificarToken(req);
+      return res.status(401).json({ error: 'Usuário não autenticado' });
+    } else {
+      usuario = await verificarToken(req);
     }
 
     const UsuarioId = Number(usuario.UsuarioId);
 
-    if(!usuario.tipo){
+    if (!usuario.tipo) {
       return res.status(403).json({ error: "Token iválido para usuário" });
     }
 
-    if (usuario.tipo !== 'usuario'){
+    if (usuario.tipo !== 'usuario') {
       return res.status(403).json({ error: "Token iválido para usuário" });
     }
 
-    if (!UsuarioId || isNaN(UsuarioId)){
+    if (!UsuarioId || isNaN(UsuarioId)) {
       return res.status(400).json({ error: "ID do usuário inválido" + UsuarioId });
     }
 
@@ -653,11 +778,11 @@ export async function obterDiaMaisMenosPeso(req, res) {
     }
 
     const maisPeso = await prisma.medicoes.findFirst({
-      where: { 
+      where: {
         UsuarioId: UsuarioId,
         MochilaId: mochila.MochilaId
       },
-      select:{
+      select: {
         MedicaoPeso: true,
         MedicaoData: true,
         MedicaoStatus: true,
@@ -669,11 +794,11 @@ export async function obterDiaMaisMenosPeso(req, res) {
     });
 
     const menosPeso = await prisma.medicoes.findFirst({
-      where: { 
+      where: {
         UsuarioId: UsuarioId,
-        MochilaId: mochila.MochilaId 
+        MochilaId: mochila.MochilaId
       },
-      select:{
+      select: {
         MedicaoPeso: true,
         MedicaoData: true,
         MedicaoStatus: true,
@@ -686,9 +811,9 @@ export async function obterDiaMaisMenosPeso(req, res) {
 
     if (!maisPeso && !menosPeso) {
       return res.status(404).json({ error: 'Nenhuma medição encontrada' });
-    }else if (!maisPeso && menosPeso){
+    } else if (!maisPeso && menosPeso) {
       return res.status(200).json({ ok: true, maisPeso: null, menosPeso: menosPeso });
-    }else if (maisPeso && !menosPeso){
+    } else if (maisPeso && !menosPeso) {
       return res.status(200).json({ ok: true, maisPeso: maisPeso, menosPeso: null });
     }
 
@@ -698,7 +823,7 @@ export async function obterDiaMaisMenosPeso(req, res) {
     console.error(e);
     return res.status(500).json({ error: 'Erro ao buscar dia mais/menos peso' });
   } finally {
-      await prisma.$disconnect();
+    await prisma.$disconnect();
   }
 }
 
@@ -709,22 +834,22 @@ export async function obterMedicoesPorPeriodo(req, res) {
 
     let usuario = null;
     if (! await verificarToken(req)) {
-        return res.status(401).json({ error: 'Usuário não autenticado' });
-    }else{
-        usuario = await verificarToken(req);
+      return res.status(401).json({ error: 'Usuário não autenticado' });
+    } else {
+      usuario = await verificarToken(req);
     }
 
     const UsuarioId = Number(usuario.UsuarioId);
 
-    if(!usuario.tipo){
+    if (!usuario.tipo) {
       return res.status(403).json({ error: "Token iválido para usuário" });
     }
 
-    if (usuario.tipo !== 'usuario'){
+    if (usuario.tipo !== 'usuario') {
       return res.status(403).json({ error: "Token iválido para usuário" });
     }
 
-    if (!UsuarioId || isNaN(UsuarioId)){
+    if (!UsuarioId || isNaN(UsuarioId)) {
       return res.status(400).json({ error: "ID do usuário inválido" });
     }
 
@@ -749,11 +874,11 @@ export async function obterMedicoesPorPeriodo(req, res) {
     const { inicio, fim } = req.params;
 
     if (!inicio || !fim) {
-        return res.status(400).json({ error: 'Datas de início e fim são obrigatórias (formato: YYYY-MM-DD)' });
+      return res.status(400).json({ error: 'Datas de início e fim são obrigatórias (formato: YYYY-MM-DD)' });
     }
 
     if (isNaN(Date.parse(inicio)) || isNaN(Date.parse(fim))) {
-        return res.status(400).json({ error: 'Datas inválidas' });
+      return res.status(400).json({ error: 'Datas inválidas' });
     }
 
     // 1. Criar a data de início no fuso horário local (Brasil)
@@ -766,25 +891,25 @@ export async function obterMedicoesPorPeriodo(req, res) {
     dataFim.setDate(dataFim.getDate() + 1);
 
     const medicoes = await prisma.medicoes.findMany({
-        where: {
-            UsuarioId: UsuarioId,
-            MochilaId: mochila.MochilaId,
-            MedicaoData: {
-                gte: dataInicio, // >= meia-noite do dia de início (no Brasil)
-                lt: dataFim      // < meia-noite do dia seguinte (no Brasil)
-            }
-        },
-        select: {
-            MedicaoPeso: true,
-            MedicaoData: true,
-            MedicaoStatus: true,
-            MedicaoLocal: true,
-            MedicaoPesoMaximoPorcentagem: true,
-            MedicaoPesoMais: true
-        },
-        orderBy: {
-            MedicaoData: 'asc'
+      where: {
+        UsuarioId: UsuarioId,
+        MochilaId: mochila.MochilaId,
+        MedicaoData: {
+          gte: dataInicio, // >= meia-noite do dia de início (no Brasil)
+          lt: dataFim      // < meia-noite do dia seguinte (no Brasil)
         }
+      },
+      select: {
+        MedicaoPeso: true,
+        MedicaoData: true,
+        MedicaoStatus: true,
+        MedicaoLocal: true,
+        MedicaoPesoMaximoPorcentagem: true,
+        MedicaoPesoMais: true
+      },
+      orderBy: {
+        MedicaoData: 'asc'
+      }
     });
 
     if (medicoes.length === 0) {
@@ -797,6 +922,6 @@ export async function obterMedicoesPorPeriodo(req, res) {
     console.error(e);
     return res.status(500).json({ error: 'Erro ao buscar medições por período' });
   } finally {
-      await prisma.$disconnect();
+    await prisma.$disconnect();
   }
 }

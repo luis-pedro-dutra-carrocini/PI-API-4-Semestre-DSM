@@ -258,7 +258,7 @@ export async function obterUsuarioLogado(req, res) {
         }
 
         //return res.status(200).json({ ok: true, message: 'Usuário encontrado', usuario });
-        return res.status(200).json(usuario);
+        return res.status(200).json({usuario: usuario, ok: true});
 
     } catch (e) {
         console.error(e);
@@ -358,8 +358,16 @@ export async function alterarUsuario(req, res) {
         }
 
         let senhaHash = '';
-        if (!UsuarioSenha) {
-            return res.status(409).json({ error: "Senha não pode ser nula" });
+        if (!UsuarioSenha || UsuarioSenha.trim() === ""){
+            const senhaExistente = await prisma.usuarios.findFirst({
+                where: {
+                    UsuarioId: UsuarioId
+                },
+                select: {
+                    UsuarioSenha: true
+                }
+            });
+            senhaHash = senhaExistente.UsuarioSenha;
         } else {
             const resultadoSenha = await validarSenha(UsuarioSenha);
 
@@ -468,7 +476,7 @@ export async function login(req, res) {
         // Cria a sessão do usuário
         //await criaSessao(req, usuario.UsuarioId, usuario.UsuarioEmail);
 
-        const payload = {
+        let payload = {
             UsuarioId: usuario.UsuarioId,
             UsuarioEmail: usuario.UsuarioEmail,
             tipo: 'usuario' // Adiciona um tipo para diferenciar do token de IoT
@@ -476,6 +484,13 @@ export async function login(req, res) {
 
         // 1. Gerar o token de acesso (curta duração)
         const accessToken = jwt.sign(payload, process.env.SECRET_KEY, { expiresIn: '15m' });
+
+        payload = {
+            UsuarioId: usuario.UsuarioId,
+            UsuarioEmail: usuario.UsuarioEmail,
+            tipo: 'usuario', // Adiciona um tipo para diferenciar do token de IoT
+            nivel: 'refresh' // Indica que este é um token de refresh
+        };
 
         // 2. Gerar o token de refresh (longa duração)
         let refreshToken;

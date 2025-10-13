@@ -85,13 +85,21 @@ export async function loginMochila(req, res) {
             return res.status(401).json({ ok: false, message: 'Assinatura inválida. Autenticação falhou.' });
         }
 
-        const payload = {
+        let payload = {
             MochilaId: mochila.MochilaId,
             MochilaCodigo: mochila.MochilaCodigo,
             tipo: 'iot',
         };
 
         const accessToken = jwt.sign(payload, process.env.SECRET_KEY, { expiresIn: '15m' });
+
+        payload = {
+            MochilaId: mochila.MochilaId,
+            MochilaCodigo: mochila.MochilaCodigo,
+            tipo: 'iot',
+            nivel: 'refresh'
+        };
+
         const refreshToken = jwt.sign(payload, process.env.SECRET_KEY, { expiresIn: '1d' });
 
         return res.status(200).json({
@@ -502,8 +510,9 @@ export async function alterarMochila(req, res) {
 
         
     } catch (error) {
-        console.error(error);
-        return res.status(500).json({ error: "Erro ao alterar mochila" });
+        console.error(error.message);
+        return null; 
+        // res.status(500).json({ error: "Erro ao alterar mochila" });
     } finally {
         await prisma.$disconnect();
     }
