@@ -125,7 +125,7 @@
         <h2>🗓️ GET - /medicoes/semanal/:mochila</h2>
         <p>Retorna todas as medições registradas para uma mochila específica nos últimos 7 dias. Requer <a href="#autenticacao">autenticação</a> de sessão do usuário.</p>
         <h3>Parâmetros de URL:</h3>
-        <pre>/medicoes/relatorio/semanal/mochila_codigo_exemplo</pre>
+        <pre>/medicoes/semanal/mochila_codigo_exemplo</pre>
         <h3>Respostas:</h3>
         <ul>
             <li>`200 OK`: Retorna um array de objetos de medição.
@@ -154,7 +154,7 @@
         <h2>📅 GET - /medicoes/mensal/:ano/:mes/:mochila</h2>
         <p>Retorna todas as medições registradas para uma mochila em um mês e ano específicos. Requer <a href="#autenticacao">autenticação</a> de sessão do usuário.</p>
         <h3>Parâmetros de URL:</h3>
-        <pre>/medicoes/relatorio/mensal/mochila_codigo_exemplo/2025/08</pre>
+        <pre>/medicoes/mensal/2025/08/mochila_codigo_exemplo</pre>
         <h3>Respostas:</h3>
         <ul>
             <li>`200 OK`: Retorna um array de medições do mês.</li>
@@ -172,7 +172,7 @@
         <h2>📈 GET - /medicoes/anual/:ano/:mochila</h2>
         <p>Retorna todas as medições registradas para uma mochila em um ano específico. Requer <a href="#autenticacao">autenticação</a> de sessão do usuário.</p>
         <h3>Parâmetros de URL:</h3>
-        <pre>/medicoes/relatorio/anual/mochila_codigo_exemplo/2025</pre>
+        <pre>/medicoes/anual/mochila_codigo_exemplo/2025</pre>
         <h3>Respostas:</h3>
         <ul>
             <li>`200 OK`: Retorna um array de medições do ano.</li>
@@ -190,7 +190,7 @@
         <h2>☀️ GET - /medicoes/dia/:data/:mochila</h2>
         <p>Retorna todas as medições registradas para uma mochila em um dia específico. Requer <a href="#autenticacao">autenticação</a> de sessão do usuário.</p>
         <h3>Parâmetros de URL:</h3>
-        <pre>/medicoes/relatorio/dia/mochila_codigo_exemplo/2025-08-10</pre>
+        <pre>/medicoes/dia/mochila_codigo_exemplo/2025-08-10</pre>
         <h3>Respostas:</h3>
         <ul>
             <li>`200 OK`: Retorna um array de medições do dia.</li>
@@ -208,7 +208,7 @@
         <h2>⚖️ GET - /medicoes/diaMaisMenosPeso/:mochila</h2>
         <p>Encontra o dia com o maior e o menor peso registrado para uma mochila. Requer <a href="#autenticacao">autenticação</a> de sessão do usuário.</p>
         <h3>Parâmetros de URL:</h3>
-        <pre>/medicoes/relatorio/peso/mochila_codigo_exemplo</pre>
+        <pre>/medicoes/peso/mochila_codigo_exemplo</pre>
         <h3>Respostas:</h3>
         <ul>
             <li>`200 OK`: Retorna um objeto com os dados da medição de maior e menor peso.
@@ -231,7 +231,7 @@
         <h2>🕰️ GET - /medicoes/periodo/:inicio/:fim/:mochila</h2>
         <p>Retorna todas as medições para uma mochila dentro de um intervalo de datas informado. Requer <a href="#autenticacao">autenticação</a> de sessão do usuário.</p>
         <h3>Parâmetros de URL:</h3>
-        <pre>/medicoes/relatorio/periodo/mochila_codigo_exemplo/2025-08-01/2025-08-15</pre>
+        <pre>/medicoes/periodo/mochila_codigo_exemplo/2025-08-01/2025-08-15</pre>
         <h3>Respostas:</h3>
         <ul>
             <li>`200 OK`: Retorna um array de medições do período.</li>

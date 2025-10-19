@@ -106,7 +106,7 @@ export async function criarMedicao(req, res) {
       }
     }
 
-    const mPesoMaximo = mochila.MochilaPesoMax;
+    let mPesoMaximo = mochila.MochilaPesoMax;
 
     // Tenta achar usuário ativo na mochila
     const usuarioMochila = await prisma.usuariosMochilas.findFirst({
@@ -146,7 +146,13 @@ export async function criarMedicao(req, res) {
     // Verifica se o peso da medição está dentro do limite
     let porcentagemPesoMaximo = 0;
 
-    if (mPesoMaximo > uPesoMaximo) {
+    if (MedicaoLocal.trim() === "esquerda" || MedicaoLocal.trim() === "direita") {
+      // Dividir o peso por 2
+      uPesoMaximo = roundTo2(uPesoMaximo / 2);
+      mPesoMaximo = roundTo2(mPesoMaximo / 2);
+    }
+
+    if (mPesoMaximo >= uPesoMaximo) {
       if (MedicaoPeso > uPesoMaximo) {
         MedicaoStatus = 'Acima do limite';
         porcentagemPesoMaximo = roundTo2(((MedicaoPeso / uPesoMaximo) * 100) - 100); // Excesso em relação ao peso máximo
