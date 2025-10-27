@@ -92,8 +92,8 @@ export async function criarMedicao(req, res) {
     let pesoNormalizado;
     if (!MedicaoPeso || isNaN(MedicaoPeso)) {
       return res.status(400).json({ error: 'Peso é obrigatório' });
-    } else if (MedicaoPeso <= 0) {
-      return res.status(400).json({ error: 'Peso da medição deve ser maior que zero' });
+    } else if (MedicaoPeso < 0) {
+      return res.status(400).json({ error: 'Peso da medição deve ser maior ou igual a zero' });
     } else {
       pesoNormalizado = roundTo2(Number(MedicaoPeso));
     }
