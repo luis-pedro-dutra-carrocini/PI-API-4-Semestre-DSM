@@ -45,7 +45,7 @@ app.use('/medicoes', medicoesRoutes);
 app.use('/usuarios-mochilas', usuariosMochilasRoutes);
 app.use('/mochilas', mochilasRoutes);
 app.use('/alertas', alertasRoutes);
-app.use('/token', tokenRoutes); // Certifique-se de que esta rota é para JWT tokens
+app.use('/token', tokenRoutes); 
 
 app.get('/health', (_req, res) => res.json({ ok: true }));
 
