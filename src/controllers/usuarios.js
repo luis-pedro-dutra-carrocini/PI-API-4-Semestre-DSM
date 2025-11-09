@@ -112,8 +112,6 @@ export async function criarUsuario(req, res) {
     } catch (e) {
         console.error(e);
         return res.status(500).json({ error: 'Erro ao cadastrar usuário' });
-    } finally {
-        await prisma.$disconnect();
     }
 }
 
@@ -121,21 +119,20 @@ export async function criarUsuario(req, res) {
 export async function obterUsuarioLogado(req, res) {
     try {
 
-        let dadosUsuario = null;
-        if (! await verificarToken(req)) {
+        let dadosUsuario = await verificarToken(req);
+
+        if (!dadosUsuario) {
             return res.status(401).json({ error: 'Usuário não autenticado' });
-        } else {
-            dadosUsuario = await verificarToken(req);
         }
 
         const UsuarioIdLogado = Number(dadosUsuario.UsuarioId);
 
-        if(!dadosUsuario.tipo){
-        return res.status(403).json({ error: "Token iválido para usuário" });
+        if (!dadosUsuario.tipo) {
+            return res.status(403).json({ error: "Token iválido para usuário" });
         }
 
-        if (dadosUsuario.tipo !== 'usuario'){
-        return res.status(403).json({ error: "Token iválido para usuário" });
+        if (dadosUsuario.tipo !== 'usuario') {
+            return res.status(403).json({ error: "Token iválido para usuário" });
         }
 
         const usuario = await prisma.usuarios.findUnique({
@@ -159,13 +156,11 @@ export async function obterUsuarioLogado(req, res) {
         }
 
         //return res.status(200).json({ ok: true, message: 'Usuário encontrado', usuario });
-        return res.status(200).json({usuario: usuario, ok: true});
+        return res.status(200).json({ usuario: usuario, ok: true });
 
     } catch (e) {
         console.error(e);
         return res.status(500).json({ error: 'Erro ao obter usuário por id' });
-    } finally {
-        await prisma.$disconnect();
     }
 }
 
@@ -173,19 +168,18 @@ export async function obterUsuarioLogado(req, res) {
 export async function alterarUsuario(req, res) {
     try {
 
-        let dadosUsuario = null;
-        if (! await verificarToken(req)) {
-            return res.status(401).json({ error: 'Usuário não autenticado' });
-        } else {
-            dadosUsuario = await verificarToken(req);
+        let dadosUsuario = await verificarToken(req);
+
+        if (!dadosUsuario) {
+        return res.status(401).json({ error: 'Usuário não autenticado' });
         }
 
-        if(!dadosUsuario.tipo){
-        return res.status(403).json({ error: "Token iválido para usuário" });
+        if (!dadosUsuario.tipo) {
+            return res.status(403).json({ error: "Token iválido para usuário" });
         }
 
-        if (dadosUsuario.tipo !== 'usuario'){
-        return res.status(403).json({ error: "Token iválido para usuário" });
+        if (dadosUsuario.tipo !== 'usuario') {
+            return res.status(403).json({ error: "Token iválido para usuário" });
         }
 
         const { UsuarioNome, UsuarioEmail, UsuarioSenha, UsuarioDtNascimento, UsuarioPeso, UsuarioAltura, UsuarioSexo, UsuarioFoto, UsuarioPesoMaximoPorcentagem } = req.body;
@@ -259,7 +253,7 @@ export async function alterarUsuario(req, res) {
         }
 
         let senhaHash = '';
-        if (!UsuarioSenha || UsuarioSenha.trim() === ""){
+        if (!UsuarioSenha || UsuarioSenha.trim() === "") {
             const senhaExistente = await prisma.usuarios.findFirst({
                 where: {
                     UsuarioId: UsuarioId
@@ -326,8 +320,6 @@ export async function alterarUsuario(req, res) {
     } catch (e) {
         console.error(e);
         return res.status(500).json({ error: 'Erro ao alterar usuário' });
-    } finally {
-        await prisma.$disconnect();
     }
 }
 
@@ -346,7 +338,7 @@ export async function login(req, res) {
 
         if (!TipoLogin) {
             return res.status(400).json({ error: 'Informe de onde vem a requisição (App ou Web)' });
-        }else if (TipoLogin !== 'App' && TipoLogin !== 'Web') {
+        } else if (TipoLogin !== 'App' && TipoLogin !== 'Web') {
             return res.status(400).json({ error: 'Tipo de login inválido. Use "App" ou "Web"' });
         }
 
@@ -412,8 +404,6 @@ export async function login(req, res) {
     } catch (e) {
         console.error(e);
         return res.status(500).json({ error: 'Erro ao realizar login' });
-    } finally {
-        await prisma.$disconnect();
     }
 }
 
@@ -449,8 +439,6 @@ export async function logout(req, res) {
         console.error("Erro ao revogar o token:", e);
         return res.status(500).json({ error: 'Erro interno do servidor.' });
 
-    } finally {
-        await prisma.$disconnect();
     }
 }
 
@@ -458,21 +446,20 @@ export async function logout(req, res) {
 export async function excluirUsuario(req, res) {
     try {
 
-        let usuario = null;
-        if (! await verificarToken(req)) {
-            return res.status(401).json({ error: 'Usuário não autenticado' });
-        } else {
-            usuario = await verificarToken(req);
+        let usuario = await verificarToken(req);
+
+        if (!usuario) {
+        return res.status(401).json({ error: 'Usuário não autenticado' });
         }
 
         const UsuarioId = Number(usuario.UsuarioId);
 
-        if(!usuario.tipo){
-        return res.status(403).json({ error: "Token iválido para usuário" });
+        if (!usuario.tipo) {
+            return res.status(403).json({ error: "Token iválido para usuário" });
         }
 
-        if (usuario.tipo !== 'usuario'){
-        return res.status(403).json({ error: "Token iválido para usuário" });
+        if (usuario.tipo !== 'usuario') {
+            return res.status(403).json({ error: "Token iválido para usuário" });
         }
 
         if (!UsuarioId) {
@@ -505,7 +492,5 @@ export async function excluirUsuario(req, res) {
     } catch (e) {
         console.error(e);
         return res.status(500).json({ error: 'Erro ao excluir usuário' });
-    } finally {
-        await prisma.$disconnect();
     }
 }

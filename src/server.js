@@ -1,5 +1,23 @@
 import app from './app.js';
-const PORT = process.env.PORT || 3000;
+import { PrismaClient } from '@prisma/client';
+
+const prisma = new PrismaClient();
+const PORT = process.env.PORT || 3001;
+
 app.listen(PORT, "0.0.0.0", () => {
 	console.log(`API on http://localhost:${PORT}`);
+});
+
+// Encerrar o Prisma de forma limpa quando o servidor for parado
+process.on('SIGINT', async () => {
+  console.log('🛑 Encerrando servidor...');
+  await prisma.$disconnect();
+  server.close(() => {
+    console.log('Servidor e Prisma desconectados com sucesso.');
+    process.exit(0);
+  });
+});
+
+process.on('beforeExit', async () => {
+  await prisma.$disconnect();
 });

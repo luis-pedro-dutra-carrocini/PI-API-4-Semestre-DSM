@@ -27,8 +27,6 @@ export async function validarToken(req, res) {
   } catch (e) {
     console.error(e);
     return res.status(500).json({ error: 'Erro ao validar token' });
-  } finally {
-    await prisma.$disconnect();
   }
 }
 
@@ -97,7 +95,5 @@ export async function refresh(req, res) {
     }
     console.error("Erro ao renovar o token:", e);
     return res.status(401).json({ error: 'Token de refresh inválido.' });
-  } finally {
-    await prisma.$disconnect();
   }
 }

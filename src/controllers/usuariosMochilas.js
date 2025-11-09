@@ -23,11 +23,10 @@ export async function listarUsuariosMochilas(req, res){
 export async function obterMochilaUsuario(req, res) {
   try {
 
-    let usuario = null;
-    if (! await verificarToken(req)) {
+    let usuario = await verificarToken(req);
+
+    if (!usuario) {
       return res.status(401).json({ error: 'Usuário não autenticado' });
-    } else {
-      usuario = await verificarToken(req);
     }
 
     const UsuarioId = Number(usuario.UsuarioId);
@@ -89,19 +88,16 @@ export async function obterMochilaUsuario(req, res) {
 
   } catch (e) {
     return res.status(500).json({ error: "Erro ao obter mochilas" });
-  } finally {
-    await prisma.$disconnect();
   }
 }
 
 export async function obterMochilaUsuarioUso(req, res) {
   try {
 
-    let usuario = null;
-    if (! await verificarToken(req)) {
+    let usuario = await verificarToken(req);
+
+    if (!usuario) {
       return res.status(401).json({ error: 'Usuário não autenticado' });
-    } else {
-      usuario = await verificarToken(req);
     }
 
     const UsuarioId = Number(usuario.UsuarioId);
@@ -167,8 +163,6 @@ export async function obterMochilaUsuarioUso(req, res) {
   } catch (e) {
     console.error(e);
     return res.status(500).json({ error: "Erro ao obter mochilas" });
-  } finally {
-    await prisma.$disconnect();
   }
 }
 
@@ -177,11 +171,10 @@ export async function vincularMochila(req, res) {
   try {
     const { MochilaCodigo, MochilaNome } = req.body;
 
-    let dadosUsuario = null;
-    if (! await verificarToken(req)) {
+    let dadosUsuario = await verificarToken(req);
+
+    if (!dadosUsuario) {
       return res.status(401).json({ error: 'Usuário não autenticado' });
-    } else {
-      dadosUsuario = await verificarToken(req);
     }
 
     const UsuarioId = Number(dadosUsuario.UsuarioId);
@@ -238,8 +231,6 @@ export async function vincularMochila(req, res) {
   } catch (e) {
     console.error(e);
     return res.status(500).json({ error: 'Erro ao vincular mochila' });
-  } finally {
-    await prisma.$disconnect();
   }
 }
 
@@ -249,11 +240,10 @@ export async function desvincularMochila(req, res) {
     const { MochilaCodigo } = req.body;
 
     // Verifica se o token é válido e identifica o usuário
-    let dadosUsuario = null;
-    if (!await verificarToken(req)) {
+    let dadosUsuario = await verificarToken(req);
+
+    if (!dadosUsuario) {
       return res.status(401).json({ error: 'Usuário não autenticado' });
-    } else {
-      dadosUsuario = await verificarToken(req);
     }
 
     const UsuarioId = Number(dadosUsuario.UsuarioId);
@@ -310,8 +300,6 @@ export async function desvincularMochila(req, res) {
   } catch (e) {
     console.error(e);
     return res.status(500).json({ error: 'Erro ao desvincular mochila' });
-  } finally {
-    await prisma.$disconnect();
   }
 }
 
@@ -320,11 +308,10 @@ export async function assumirUsoMochila(req, res) {
   try {
     const { MochilaCodigo } = req.body;
 
-    let dadosUsuario = null;
-    if (! await verificarToken(req)) {
+    let dadosUsuario = await verificarToken(req);
+
+    if (!dadosUsuario) {
       return res.status(401).json({ error: 'Usuário não autenticado' });
-    } else {
-      dadosUsuario = await verificarToken(req);
     }
 
     const UsuarioId = Number(dadosUsuario.UsuarioId);
@@ -449,8 +436,6 @@ export async function assumirUsoMochila(req, res) {
     }
     console.error(e);
     return res.status(500).json({ error: 'Erro ao assumir uso' });
-  } finally {
-    await prisma.$disconnect();
   }
 }
 
@@ -458,11 +443,12 @@ export async function editarNomeMochila(req, res) {
   try {
     const { MochilaCodigo, NovoNome } = req.body;
 
-    if (!await verificarToken(req)) {
+    let dadosUsuario = await verificarToken(req);
+
+    if (!dadosUsuario) {
       return res.status(401).json({ error: 'Usuário não autenticado' });
     }
 
-    const dadosUsuario = await verificarToken(req);
     const UsuarioId = Number(dadosUsuario.UsuarioId);
 
     if (dadosUsuario.tipo !== 'usuario') {
@@ -507,8 +493,6 @@ export async function editarNomeMochila(req, res) {
   } catch (e) {
     console.error(e);
     return res.status(500).json({ error: 'Erro ao editar nome da mochila' });
-  } finally {
-    await prisma.$disconnect();
   }
 }
 
@@ -518,11 +502,10 @@ export async function encerrarUsoApp(req, res) {
   try {
     const { MochilaCodigo } = req.body;
 
-    let dadosUsuario = null;
-    if (! await verificarToken(req)) {
+    let dadosUsuario = await verificarToken(req);
+
+    if (!dadosUsuario) {
       return res.status(401).json({ error: 'Usuário não autenticado' });
-    } else {
-      dadosUsuario = await verificarToken(req);
     }
 
     const UsuarioId = Number(dadosUsuario.UsuarioId);
@@ -568,19 +551,16 @@ export async function encerrarUsoApp(req, res) {
   } catch (e) {
     console.error(e);
     res.status(500).json({ error: 'Erro ao encerrar uso' });
-  } finally {
-    await prisma.$disconnect();
   }
 }
 
 // Validado (15/09/25) - Encerrar uso da mochila pela IoT
 export async function encerrarUsoIOT(req, res) {
   try {
-    let dadosMochila = null;
-    if (! await verificarToken(req)) {
-      return res.status(401).json({ error: 'Mochila não autenticada' });
-    } else {
-      dadosMochila = await verificarToken(req);
+    let dadosUsuario = await verificarToken(req);
+
+    if (!dadosUsuario) {
+      return res.status(401).json({ error: 'Usuário não autenticado' });
     }
 
     if (dadosMochila.tipo !== 'iot') {
@@ -612,7 +592,5 @@ export async function encerrarUsoIOT(req, res) {
   } catch (e) {
     console.error(e);
     res.status(500).json({ error: 'Erro ao encerrar uso' });
-  } finally {
-    await prisma.$disconnect();
   }
 }
