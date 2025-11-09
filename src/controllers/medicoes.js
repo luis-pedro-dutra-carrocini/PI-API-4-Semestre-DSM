@@ -63,6 +63,125 @@ export async function loginMochila(req, res) {
 }
 */
 
+// Rota para criar medições em lote, para popular o banco de dados (Desativar após uso)
+export async function criarMedicoesLote(req, res) {
+  try {
+    const { medicoes } = req.body;
+
+    if (!Array.isArray(medicoes) || medicoes.length === 0) {
+      return res.status(400).json({ error: "Envie um array de medições válidas." });
+    }
+
+    const dadosMochila = await verificarToken(req);
+    if (!dadosMochila || dadosMochila.tipo !== "iot") {
+      return res.status(401).json({ error: "Token inválido ou mochila não autenticada." });
+    }
+
+    const MochilaId = Number(dadosMochila.MochilaId);
+    const mochila = await prisma.mochilas.findUnique({ where: { MochilaId } });
+    if (!mochila) {
+      return res.status(404).json({ error: "Mochila não encontrada." });
+    }
+
+    const usuarioMochila = await prisma.usuariosMochilas.findFirst({
+      where: {
+        MochilaId,
+        OR: [{ UsoStatus: "Usando" }, { UsoStatus: "Último a Usar" }],
+      },
+    });
+
+    if (!usuarioMochila) {
+      return res.status(404).json({ error: "Nenhum usuário ativo para esta mochila." });
+    }
+
+    const uId = usuarioMochila.UsuarioId;
+    const usuario = await prisma.usuarios.findUnique({ where: { UsuarioId: uId } });
+    if (!usuario) {
+      return res.status(404).json({ error: "Usuário não encontrado." });
+    }
+
+    const uPeso = usuario.UsuarioPeso || 1;
+    const uPesoMaximoPorcentagem = usuario.UsuarioPesoMaximoPorcentagem || 10;
+    let uPesoMaximo = uPeso * (uPesoMaximoPorcentagem / 100);
+
+    const medicoesProcessadas = [];
+
+    for (const m of medicoes) {
+      const { MedicaoPeso, MedicaoLocal, MedicaoData } = m;
+      if (!MedicaoPeso || isNaN(MedicaoPeso) || MedicaoPeso < 0) continue;
+      if (!MedicaoLocal || !["esquerda", "direita", "centro", "ambos"].includes(MedicaoLocal.trim().toLowerCase())) continue;
+      if (!MedicaoData) continue;
+
+      const dataConvertida = new Date(MedicaoData);
+      if (isNaN(dataConvertida.getTime())) continue;
+
+      let mPesoMaximo = mochila.MochilaPesoMax || 1;
+      let local = MedicaoLocal.trim().toLowerCase();
+
+      if (["esquerda", "direita"].includes(local)) {
+        uPesoMaximo = Math.max(1, uPesoMaximo / 2);
+        mPesoMaximo = Math.max(1, mPesoMaximo / 2);
+      }
+
+      let MedicaoStatus = "Dentro do limite";
+      let MedicaoPesoMais = 0;
+      let porcentagemPesoMaximo = 0;
+
+      if (mPesoMaximo >= uPesoMaximo) {
+        if (MedicaoPeso > uPesoMaximo) {
+          MedicaoStatus = "Acima do limite";
+          porcentagemPesoMaximo = ((MedicaoPeso / uPesoMaximo) * 100) - 100;
+          MedicaoPesoMais = MedicaoPeso - uPesoMaximo;
+        } else {
+          porcentagemPesoMaximo = (MedicaoPeso * 100) / uPesoMaximo;
+          MedicaoPesoMais = uPesoMaximo - MedicaoPeso;
+        }
+      } else {
+        if (MedicaoPeso > mPesoMaximo) {
+          MedicaoStatus = "Acima do limite da Mochila";
+          porcentagemPesoMaximo = ((MedicaoPeso / mPesoMaximo) * 100) - 100;
+          MedicaoPesoMais = MedicaoPeso - mPesoMaximo;
+        } else {
+          porcentagemPesoMaximo = (MedicaoPeso * 100) / mPesoMaximo;
+          MedicaoPesoMais = mPesoMaximo - MedicaoPeso;
+        }
+      }
+
+      // Limites de segurança
+      porcentagemPesoMaximo = Math.min(Math.max(porcentagemPesoMaximo, 0), 999.99);
+      MedicaoPesoMais = Math.min(Math.max(MedicaoPesoMais, 0), 999.99);
+
+      medicoesProcessadas.push({
+        MochilaId,
+        UsuarioId: uId,
+        MedicaoPeso: Number(MedicaoPeso.toFixed(2)),
+        MedicaoData: dataConvertida,
+        MedicaoStatus,
+        MedicaoLocal: local,
+        MedicaoPesoMaximoPorcentagem: Number(porcentagemPesoMaximo.toFixed(2)),
+        MedicaoPesoMais: Number(MedicaoPesoMais.toFixed(2)),
+      });
+    }
+
+    if (medicoesProcessadas.length === 0) {
+      return res.status(400).json({ error: "Nenhuma medição válida foi enviada." });
+    }
+
+    await prisma.medicoes.createMany({ data: medicoesProcessadas });
+
+    return res.status(201).json({
+      ok: true,
+      totalMedicoes: medicoesProcessadas.length,
+      message: "Medições registradas com sucesso (com segurança de limites)",
+    });
+  } catch (e) {
+    console.error(e);
+    return res.status(500).json({ error: "Erro ao registrar medições em lote" });
+  } finally {
+    await prisma.$disconnect();
+  }
+}
+
 // Validado (15/09/2025) - Criar medição (IoT)
 export async function criarMedicao(req, res) {
   try {
@@ -283,7 +402,7 @@ export async function obterUltimaMedicaoMochilaUsuario(req, res) {
         MochilaId: mochila.MochilaId,
         MedicaoLocal: 'esquerda'
       },
-      orderBy: { MedicaoData: 'desc' },
+      orderBy: [ { MedicaoData: 'desc' }, { MedicaoId: 'desc' } ],
       select: {
         MedicaoPeso: true,
         MedicaoData: true,
@@ -300,7 +419,7 @@ export async function obterUltimaMedicaoMochilaUsuario(req, res) {
         MochilaId: mochila.MochilaId,
         MedicaoLocal: 'direita'
       },
-      orderBy: { MedicaoData: 'desc' },
+      orderBy: [ { MedicaoData: 'desc' }, { MedicaoId: 'desc' } ],
       select: {
         MedicaoPeso: true,
         MedicaoData: true,
@@ -317,7 +436,7 @@ export async function obterUltimaMedicaoMochilaUsuario(req, res) {
         MochilaId: mochila.MochilaId,
         MedicaoLocal: 'ambos'
       },
-      orderBy: { MedicaoData: 'desc' },
+      orderBy: [ { MedicaoData: 'desc' }, { MedicaoId: 'desc' } ],
       select: {
         MedicaoPeso: true,
         MedicaoData: true,
@@ -334,7 +453,7 @@ export async function obterUltimaMedicaoMochilaUsuario(req, res) {
         MochilaId: mochila.MochilaId,
         MedicaoLocal: 'centro'
       },
-      orderBy: { MedicaoData: 'desc' },
+      orderBy: [ { MedicaoData: 'desc' }, { MedicaoId: 'desc' } ],
       select: {
         MedicaoPeso: true,
         MedicaoData: true,
