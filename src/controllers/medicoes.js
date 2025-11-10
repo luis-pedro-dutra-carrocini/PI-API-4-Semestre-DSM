@@ -1,67 +1,8 @@
 import { prisma } from '../prisma.js';
-import { roundTo2, verificarToken } from '../utils.js';
-
-// Validado (31/08/2025) - Para testes (Desativar)
-/*
-export async function obterMedicoes(req, res) {
-  try {
-    //const {UsuarioID} = req.body;
-    const medicoes = await prisma.medicoes.findMany({
-      orderBy: { MedicaoData:'desc'}
-    });
-
-    if (!medicoes){
-      return res.status(404).json({ error: 'Nenhuma medição encontrada' });
-    }
-
-    return res.status(200).json(medicoes);
-  } catch (e) {
-    console.error(e);
-    return res.status(500).json({ error: 'Erro ao bucar medições' });
-  }
-}
-*/
-
-// Rota de login para o dispositivo Mochila (IoT)
-/*
-export async function loginMochila(req, res) {
-    try {
-        const { MochilaCodigo, MochilaSenha } = req.body;
-
-        // 1. Busca a mochila pelo seu código único
-        const mochila = await prisma.mochilas.findUnique({
-            where: { MochilaCodigo: MochilaCodigo }
-        });
-
-        if (!mochila) {
-            return res.status(404).json({ error: 'Mochila não encontrada.' });
-        }
-
-        // 2. Verifica a senha da mochila
-        if (!await verificarSenha(MochilaSenha, mochila.MochilaSenha)) {
-            return res.status(401).json({ error: 'Senha da mochila incorreta.' });
-        }
-
-        // Dados do payload para o JWT da mochila
-        const payload = {
-            MochilaId: mochila.MochilaId
-        };
-        
-        // 4. Cria o JWT com o payload e a chave secreta
-        // O tempo de expiração é importante para a segurança (15m)
-        const token = jwt.sign(payload, process.env.SECRET_KEY, { expiresIn: '15m' });
-
-        // 5. Retorna o token para o dispositivo IoT
-        return res.status(200).json({ ok: true, message: 'Autenticação da mochila bem-sucedida.', token: token });
-
-    } catch (e) {
-        console.error("Erro na autenticação da mochila:", e);
-        return res.status(500).json({ error: 'Erro ao autenticar a mochila.' });
-    }
-}
-*/
+import { roundTo2, verificarToken, calcularEstatisticas, calcularRegressaoLinear, processarMedicoes, calcularTotaisBrutosParaEstatisticas, calcularValoresParaRegressao, groupByWeekday } from '../utils.js';
 
 // Rota para criar medições em lote, para popular o banco de dados (Desativar após uso)
+/*
 export async function criarMedicoesLote(req, res) {
   try {
     const { medicoes } = req.body;
@@ -177,6 +118,7 @@ export async function criarMedicoesLote(req, res) {
     return res.status(500).json({ error: "Erro ao registrar medições em lote" });
   }
 }
+*/
 
 // Validado (15/09/2025) - Criar medição (IoT)
 export async function criarMedicao(req, res) {
@@ -485,7 +427,6 @@ export async function obterUltimaMedicaoMochilaUsuario(req, res) {
   }
 }
 
-// Validado (15/09/2025) / Validar posteriormente com mais registros
 // Relatório do peso carregado com a mochila nos últimos 7 dias
 export async function obterRelatorioSemanal(req, res) {
   try {
@@ -581,9 +522,256 @@ export async function obterRelatorioSemanal(req, res) {
   }
 }
 
+// Previsão do peso para um dia específico da semana
+// Previsão do peso para um dia específico da semana
+export async function obterPrevisaoPorDia(req, res) {
+  try {
+    let usuario = null;
+    if (!await verificarToken(req)) {
+      return res.status(401).json({ error: 'Usuário não autenticado' });
+    } else {
+      usuario = await verificarToken(req);
+    }
+
+    
+    const UsuarioId = Number(usuario.UsuarioId);
+
+    if (!usuario.tipo || usuario.tipo !== 'usuario') {
+      return res.status(403).json({ error: "Token inválido para usuário" });
+    }
+
+    if (!UsuarioId || isNaN(UsuarioId)) {
+      return res.status(400).json({ error: "ID do usuário inválido" });
+    }
+
+    
+    const dadosusuario = await prisma.usuarios.findUnique({ where: { UsuarioId: UsuarioId } });
+
+    if (!dadosusuario) {
+      return res.status(404).json({ error: 'Usuário não encontrado' });
+    }
+
+    const MochilaCodigo = req.params.mochila;
+    const dataAlvo = new Date(req.params.data);
+
+    
+    if (!MochilaCodigo || MochilaCodigo.trim() === '') {
+      return res.status(400).json({ error: "Informe o código da mochila" });
+    }
+
+    
+    if (!dataAlvo || isNaN(dataAlvo.getTime())) {
+      return res.status(400).json({ error: "Data inválida" });
+    }
+
+    const mochila = await prisma.mochilas.findUnique({ where: { MochilaCodigo: MochilaCodigo } });
+
+    
+    if (!mochila) {
+      return res.status(404).json({ error: 'Mochila não encontrado' });
+    }
+
+    // Verificar vínculo entre usuário e mochila
+    const usuarioMochila = await prisma.usuariosMochilas.findFirst({
+      where: {
+        UsuarioId: UsuarioId,
+        MochilaId: mochila.MochilaId
+      }
+    });
+
+    
+    if (!usuarioMochila) {
+      return res.status(404).json({ error: 'Usuário não está vinculado a esta mochila' });
+    }
+
+    // Buscar todas as medições
+    const medicoes = await prisma.medicoes.findMany({
+      where: {
+        UsuarioId: UsuarioId,
+        MochilaId: mochila.MochilaId,
+      },
+      select: {
+        MedicaoPeso: true,
+        MedicaoData: true,
+        MedicaoStatus: true,
+        MedicaoLocal: true,
+      },
+      orderBy: { MedicaoData: 'asc' }
+    });
+
+    
+    if (medicoes.length === 0) {
+      return res.status(404).json({ 
+        error: 'Nenhuma medição encontrada',
+        previsao: null,
+        estatisticas: null,
+        motivo: "Não existem medições para cálculo"
+      });
+    }
+
+    // 🟢 CORREÇÃO: Determina o dia da semana da data alvo (0=Domingo ... 6=Sábado)
+    // Usando UTC para evitar problemas de timezone
+    const weekdayEscolhido = dataAlvo.getUTCDay();
+   
+    
+    // 🟢 CORREÇÃO: Filtra todas as medições que têm o mesmo dia da semana (usando UTC)
+    const medicoesMesmoWeekday = medicoes.filter((m) => {
+      const d = new Date(m.MedicaoData);
+      const diaMedicao = d.getUTCDay();
+      return diaMedicao === weekdayEscolhido;
+    });
+
+    
+    
+    // 🟢 DEBUG: Mostrar os dias das primeiras medições
+    
+    medicoes.slice(0, 10).forEach((m, i) => {
+      const d = new Date(m.MedicaoData);
+    });
+
+    
+    
+    if (medicoesMesmoWeekday.length === 0) {
+      return res.status(200).json({
+        previsao: null,
+        estatisticas: null,
+        motivo: "Não existem medições com o mesmo dia da semana do escolhido."
+      });
+    }
+
+    // 🟢 CORREÇÃO: Agrupar por data (yyyy-mm-dd) usando UTC
+    const mapaPorData = {};
+    medicoesMesmoWeekday.forEach((m) => {
+      const d = new Date(m.MedicaoData);
+      const y = d.getUTCFullYear();
+      const mm = String(d.getUTCMonth() + 1).padStart(2, "0");
+      const dd = String(d.getUTCDate()).padStart(2, "0");
+      const key = `${y}-${mm}-${dd}`;
+      if (!mapaPorData[key]) mapaPorData[key] = [];
+      mapaPorData[key].push(m);
+    });
+
+    
+    
+
+    // Para cada data: agrupar por hora:minuto e calcular média esquerda/direita
+    const totaisPorDia = Object.entries(mapaPorData).map(([dataStr, lista]) => {
+      // Agrupa por hora:minuto
+      const mapaHoraMin = {};
+      lista.forEach((item) => {
+        const d = new Date(item.MedicaoData);
+        const h = String(d.getUTCHours()).padStart(2, "0");
+        const min = String(d.getUTCMinutes()).padStart(2, "0");
+        const chave = `${h}:${min}`;
+        if (!mapaHoraMin[chave]) mapaHoraMin[chave] = [];
+        mapaHoraMin[chave].push(item);
+      });
+
+      // Para cada hora:minuto, calcular média das medições esquerda/direita
+      const mediasHorarias = Object.values(mapaHoraMin).map((arr) => {
+        const esquerda = arr.filter((v) => 
+          v.MedicaoLocal?.toLowerCase().includes("esquerda") || 
+          v.MedicaoLocal?.toLowerCase().includes("esq")
+        );
+        const direita = arr.filter((v) => 
+          v.MedicaoLocal?.toLowerCase().includes("direita") || 
+          v.MedicaoLocal?.toLowerCase().includes("dir")
+        );
+        const ambos = arr.filter((v) => 
+          v.MedicaoLocal?.toLowerCase().includes("ambos") || 
+          v.MedicaoLocal?.toLowerCase().includes("centro")
+        );
+
+        let pesoEsq = 0;
+        let pesoDir = 0;
+
+        if (esquerda.length > 0) {
+          pesoEsq = esquerda.reduce((acc, v) => acc + Number(v.MedicaoPeso || 0), 0) / esquerda.length;
+        }
+
+        if (direita.length > 0) {
+          pesoDir = direita.reduce((acc, v) => acc + Number(v.MedicaoPeso || 0), 0) / direita.length;
+        }
+
+        // Se tem medições de "ambos", adiciona aos dois lados
+        if (ambos.length > 0) {
+          const pesoAmbos = ambos.reduce((acc, v) => acc + Number(v.MedicaoPeso || 0), 0) / ambos.length;
+          pesoEsq += pesoAmbos;
+          pesoDir += pesoAmbos;
+        }
+
+        return pesoEsq + pesoDir;
+      });
+
+      // Média do dia = soma das médias horárias ÷ quantidade de horários com medição
+      const mediaDia = mediasHorarias.length > 0 
+        ? mediasHorarias.reduce((a, b) => a + b, 0) / mediasHorarias.length 
+        : 0;
+
+      return roundTo2(mediaDia);
+    }).filter(val => val > 0); // Remove dias com média zero
+
+    
+    
+    
+    // Calcular estatísticas
+    if (totaisPorDia.length <= 1) {
+      const statsParciais = calcularEstatisticas(totaisPorDia);
+      return res.status(200).json({
+        previsao: null,
+        estatisticas: statsParciais ? {
+          ...statsParciais,
+          totalMedicoes: totaisPorDia.length
+        } : null,
+        motivo: "Dados insuficientes: é necessário pelo menos 2 dias com medições para esse dia da semana."
+      });
+    }
+
+    const estatisticas = calcularEstatisticas(totaisPorDia);
+    const statsCompletas = {
+      ...estatisticas,
+      totalMedicoes: totaisPorDia.length
+    };
+
+    
+    
+    // Critério de validade: assimetria populacional em módulo <= 1
+    const skew = estatisticas?.assimetria ?? 0;
+    if (Math.abs(skew) > 1) {
+      return res.status(200).json({
+        previsao: null,
+        estatisticas: statsCompletas,
+        motivo: `Os dados apresentam alta assimetria (assimetria = ${estatisticas.assimetria}). Isso reduz a confiabilidade da previsão.`
+      });
+    }
+
+    // Previsão válida
+    const previsao = {
+      media: estatisticas.media,
+      n: totaisPorDia.length,
+      dataAlvo: dataAlvo.toISOString(),
+      diaSemana: weekdayEscolhido,
+      nomeDia: ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'][weekdayEscolhido]
+    };
+
+    return res.status(200).json({
+      previsao,
+      estatisticas: statsCompletas,
+      motivo: null
+    });
+
+  } catch (e) {
+    console.error('Erro na previsão:', e);
+    return res.status(500).json({ error: 'Erro ao calcular previsão' });
+  } finally {
+    await prisma.$disconnect();
+  }
+}
+
+// Relatório geral com todas as medições do usuário com detrminada mochila
+// Usado para o relatório geral semanal
 export async function obterRelatorioGeral(req, res) {
   try {
-
     let usuario = await verificarToken(req);
 
     if (!usuario) {
@@ -592,11 +780,7 @@ export async function obterRelatorioGeral(req, res) {
 
     const UsuarioId = Number(usuario.UsuarioId);
 
-    if (!usuario.tipo) {
-      return res.status(403).json({ error: "Token iválido para usuário" });
-    }
-
-    if (usuario.tipo !== 'usuario') {
+    if (!usuario.tipo || usuario.tipo !== 'usuario') {
       return res.status(403).json({ error: "Token iválido para usuário" });
     }
 
@@ -622,18 +806,8 @@ export async function obterRelatorioGeral(req, res) {
       return res.status(404).json({ error: 'Mochila não encontrada' });
     }
 
-    // Verificar vinculo entre usuário e mochila
-    const usuarioMochila = await prisma.usuariosMochilas.findFirst({
-      where: {
-        UsuarioId: UsuarioId,
-        MochilaId: mochila.MochilaId
-      }
-    });
-
-    if (!usuarioMochila) {
-      return res.status(404).json({ error: 'Usuário não está vinculado a esta mochila' });
-    }
-
+    // --- 1. BUSCAR TODAS AS MEDIÇÕES ---
+    // Buscamos todos os registros, pois eles são necessários para o cálculo e o agrupamento.
     const medicoes = await prisma.medicoes.findMany({
       where: {
         UsuarioId: UsuarioId,
@@ -651,10 +825,49 @@ export async function obterRelatorioGeral(req, res) {
     });
 
     if (medicoes.length === 0) {
-      return res.status(404).json({ error: 'Nenhuma medição encontrada' });
+      return res.status(404).json({ error: 'Nenhuma medição encontrada', estatisticas: null, agrupadoPorDia: [] });
     }
 
-    return res.status(200).json(medicoes);
+    // 🎯 2. CALCULAR TOTAIS BRUTOS EM MEMÓRIA (Correto, pois 'medicoes' já está aqui)
+    const totalPesoBruto = roundTo2(
+      medicoes.reduce((acc, curr) => {
+        const peso = Number(curr.MedicaoPeso);
+        // Só soma se for um número válido e finito
+        return acc + (Number.isFinite(peso) ? peso : 0);
+      }, 0)
+    );
+    const totalMedicoesBrutas = (medicoes.length)/2;
+
+
+    // --- 3. CALCULAR ESTATÍSTICAS (Baseadas na Amostra Agregada por Minuto) ---
+    // Calcula a média de peso por minuto (retorna o array, por exemplo, de 265 elementos)
+    const totaisMinuto = calcularTotaisBrutosParaEstatisticas(medicoes);
+
+    // Calcula as estatísticas (média, mediana, desvio) baseadas nos totaisMinuto
+    const estatisticas = calcularEstatisticas(totaisMinuto);
+
+    const { x, y } = calcularValoresParaRegressao(totaisMinuto);
+    let regressao = null;
+    if (x.length >= 2) {
+      regressao = calcularRegressaoLinear(x, y);
+    }
+
+    if (estatisticas) {
+      estatisticas.regressao = regressao;
+
+      // 🎯 4. INJETAR OS VALORES BRUTOS (Sobrescrever os totais da amostra)
+      estatisticas.totalMedicoes = totalMedicoesBrutas;
+      estatisticas.totalPeso = totalPesoBruto;
+    }
+
+    // --- 5. AGRUPAR POR DIA DA SEMANA E PROCESSAR DETALHES ---
+    const agrupadoPorDia = groupByWeekday(medicoes);
+
+    // --- 6. RETORNAR O OBJETO PRÉ-PROCESSADO E LIMPO ---
+    return res.status(200).json({
+      estatisticas: estatisticas,
+      agrupadoPorDia: agrupadoPorDia
+    });
 
   } catch (e) {
     console.error(e);
@@ -662,11 +875,9 @@ export async function obterRelatorioGeral(req, res) {
   }
 }
 
-// Validado (15/09/2025) / Validar posteriormente com mais registros
 // Relatório mensal (usuário escolhe mês e ano)
 export async function obterRelatorioMensal(req, res) {
   try {
-
     let usuario = await verificarToken(req);
 
     if (!usuario) {
@@ -675,11 +886,7 @@ export async function obterRelatorioMensal(req, res) {
 
     const UsuarioId = Number(usuario.UsuarioId);
 
-    if (!usuario.tipo) {
-      return res.status(403).json({ error: "Token iválido para usuário" });
-    }
-
-    if (usuario.tipo !== 'usuario') {
+    if (!usuario.tipo || usuario.tipo !== 'usuario') {
       return res.status(403).json({ error: "Token iválido para usuário" });
     }
 
@@ -710,17 +917,10 @@ export async function obterRelatorioMensal(req, res) {
       return res.status(400).json({ error: "Informe mês e ano" });
     }
 
-    // A validação de mes e ano pode ser simplificada.
-    // O parseInt já lida com strings como '08'.
-    // if (mes.length !== 2 || ano.length !== 4){
-    //   return res.status(400).json({ error: 'Mês e/ou ano inválidos' });
-    // }
-
-    // Ajuste para garantir que o mês seja tratado como número
     const mesInt = parseInt(mes);
     const anoInt = parseInt(ano);
 
-    // Criar a data de início do mês (primeiro dia) no fuso horário de Brasília
+    // Criar a data de início do mês (primeiro dia) no fuso horário de Brasília (-03:00)
     const inicio = new Date(`${anoInt}-${mesInt.toString().padStart(2, '0')}-01T00:00:00-03:00`);
 
     // Criar a data de fim (primeiro dia do próximo mês) no fuso horário de Brasília
@@ -747,109 +947,133 @@ export async function obterRelatorioMensal(req, res) {
       orderBy: { MedicaoData: 'desc' }
     });
 
-    if (medicoes.length === 0) {
-      return res.status(404).json({ error: 'Nenhuma medição encontrada no mês informado' });
-    }
+    // ########## EXECUTAR CÁLCULOS AQUI ##########
 
-    return res.status(200).json(medicoes);
+    // Obter os dados necessários para o cálculo, garantindo valores padrão
+    const pesoUsuario = dadosusuario.UsuarioPeso || 70;
+    const porcentagemMaxima = dadosusuario.UsuarioPesoMaximoPorcentagem || 10;
+
+    const resultadoProcessado = processarMedicoes(medicoes, pesoUsuario, porcentagemMaxima);
+
+    // ########## RETORNAR DADOS PROCESSADOS ##########
+    // Retorna 200 mesmo se não houver medições, mas com dados processados zerados
+    return res.status(200).json(resultadoProcessado);
 
   } catch (e) {
     console.error(e);
-    return res.status(500).json({ error: 'Erro ao buscar relatório mensal' });
+    return res.status(500).json({ error: 'Erro ao buscar e processar relatório mensal' });
   }
 }
 
-// Validado (15/09/2025) / Validar posteriormente com mais registros
-// Relatório anual
+// Anual Atualizado
 export async function obterRelatorioAnual(req, res) {
   try {
-
-    let usuario = await verificarToken(req);
-
-    if (!usuario) {
-      return res.status(401).json({ error: 'Usuário não autenticado' });
-    }
+    const usuario = await verificarToken(req);
+    if (!usuario) return res.status(401).json({ error: "Usuário não autenticado" });
+    if (usuario.tipo !== "usuario")
+      return res.status(403).json({ error: "Token inválido para usuário" });
 
     const UsuarioId = Number(usuario.UsuarioId);
+    if (!UsuarioId || isNaN(UsuarioId))
+      return res.status(400).json({ error: "ID do usuário inválido" });
 
-    if (!usuario.tipo) {
-      return res.status(403).json({ error: "Token iválido para usuário" });
-    }
-
-    if (usuario.tipo !== 'usuario') {
-      return res.status(403).json({ error: "Token iválido para usuário" });
-    }
-
-    if (!UsuarioId || isNaN(UsuarioId)) {
-      return res.status(400).json({ error: "ID do usuário inválido" + UsuarioId });
-    }
-
-    const dadosusuario = await prisma.usuarios.findUnique({ where: { UsuarioId: UsuarioId } });
-
-    if (!dadosusuario) {
-      return res.status(404).json({ error: 'Usuário não encontrado' });
-    }
+    const dadosusuario = await prisma.usuarios.findUnique({ where: { UsuarioId } });
+    if (!dadosusuario)
+      return res.status(404).json({ error: "Usuário não encontrado" });
 
     const MachilaCodigo = req.params.mochila;
-
-    if (!MachilaCodigo || MachilaCodigo.trim() === '') {
+    if (!MachilaCodigo || MachilaCodigo.trim() === "")
       return res.status(400).json({ error: "Informe o código da mochila" });
-    }
 
-    const mochila = await prisma.mochilas.findUnique({ where: { MochilaCodigo: MachilaCodigo } });
-
-    if (!mochila) {
-      return res.status(404).json({ error: 'Mochila não encontrada' });
-    }
+    const mochila = await prisma.mochilas.findUnique({
+      where: { MochilaCodigo: MachilaCodigo },
+    });
+    if (!mochila)
+      return res.status(404).json({ error: "Mochila não encontrada" });
 
     const { ano } = req.params;
-    if (!ano || isNaN(ano)) {
-      return res.status(400).json({ error: "Informe o ano" });
-    }
+    if (!ano || isNaN(ano) || ano.length !== 4)
+      return res.status(400).json({ error: "Ano inválido" });
 
-    if (ano.length !== 4) {
-      return res.status(400).json({ error: 'Ano inválido' });
-    }
-
-    // Criar a data de início do ano (1 de janeiro) no fuso horário de Brasília
-    const inicio = new Date(`${ano}-01-01T00:00:00-03:00`);
-
-    // Criar a data de fim do ano (1 de janeiro do ano seguinte) no fuso horário de Brasília
-    const fim = new Date(`${parseInt(ano) + 1}-01-01T00:00:00-03:00`);
+    const anoInt = parseInt(ano);
+    const inicio = new Date(Date.UTC(anoInt, 0, 1, 0, 0, 0));
+    const fim = new Date(Date.UTC(anoInt + 1, 0, 1, 0, 0, 0));
 
     const medicoes = await prisma.medicoes.findMany({
       where: {
-        UsuarioId: UsuarioId,
+        UsuarioId,
         MochilaId: mochila.MochilaId,
-        MedicaoData: {
-          gte: inicio, // >= 1 de janeiro do ano informado no Brasil
-          lt: fim // < 1 de janeiro do ano seguinte no Brasil
-        }
+        MedicaoData: { gte: inicio, lt: fim },
+        MedicaoLocal: { in: ["esquerda", "direita"] },
       },
       select: {
         MedicaoPeso: true,
         MedicaoData: true,
-        MedicaoStatus: true,
         MedicaoLocal: true,
-        MedicaoPesoMaximoPorcentagem: true,
-        MedicaoPesoMais: true
       },
-      orderBy: { MedicaoData: 'desc' }
+      orderBy: { MedicaoData: "asc" },
     });
 
-    if (medicoes.length === 0) {
-      return res.status(404).json({ error: 'Nenhuma medição encontrada no ano informado' });
+    if (!medicoes || medicoes.length === 0) {
+      return res.status(200).json({
+        ano: anoInt,
+        mediasMensais: Array(12).fill(0),
+        estatisticas: null,
+        mensagem: "Sem medições registradas neste ano.",
+      });
     }
 
-    return res.status(200).json(medicoes);
+    // Agrupar medições por timestamp
+    const gruposPorData = {};
+    for (const m of medicoes) {
+      const timestamp = new Date(m.MedicaoData).getTime();
+      if (!gruposPorData[timestamp]) gruposPorData[timestamp] = {};
+      gruposPorData[timestamp][m.MedicaoLocal] = Number(m.MedicaoPeso);
+    }
 
+    // Combinar pares completos
+    const medicoesCompletas = [];
+    for (const [ts, lados] of Object.entries(gruposPorData)) {
+      if (lados.esquerda !== undefined && lados.direita !== undefined) {
+        const pesoTotal = lados.esquerda + lados.direita;
+        medicoesCompletas.push({
+          pesoTotal,
+          data: new Date(Number(ts)),
+        });
+      }
+    }
+
+    // Agrupar por mês
+    const gruposMensais = Array.from({ length: 12 }, () => []);
+    for (const m of medicoesCompletas) {
+      const mes = m.data.getUTCMonth();
+      gruposMensais[mes].push(m.pesoTotal);
+    }
+
+    // Médias mensais
+    const mediasMensais = gruposMensais.map((arr) => {
+      if (arr.length === 0) return 0;
+      const soma = arr.reduce((a, b) => a + b, 0);
+      return Math.round((soma / arr.length) * 100) / 100;
+    });
+
+    // Estatísticas
+    const valoresValidos = mediasMensais.filter(v => v > 0);
+    const estatisticas = valoresValidos.length > 0 ? calcularEstatisticas(valoresValidos) : null;
+    const regressao = valoresValidos.length > 0 ? calcularRegressaoLinear(valoresValidos) : null;
+    if (regressao) estatisticas.regrLinear = `y = ${regressao.a}x + ${regressao.b}`;
+
+    return res.status(200).json({
+      ano: anoInt,
+      mediasMensais,
+      estatisticas,
+    });
   } catch (e) {
     console.error(e);
-    return res.status(500).json({ error: 'Erro ao buscar relatório anual' });
+    return res.status(500).json({ error: "Erro ao buscar relatório anual" });
   }
 }
 
-// Validado (15/09/2025) / Validar posteriormente com mais registros
 // Relatório de um dia específico
 export async function obterRelatorioDia(req, res) {
   try {
@@ -938,7 +1162,6 @@ export async function obterRelatorioDia(req, res) {
   }
 }
 
-// Validado (15/09/2025) / Validar posteriormente com mais registros
 // Dia com maior e menor peso registrado
 export async function obterDiaMaisMenosPeso(req, res) {
   try {
@@ -1029,7 +1252,6 @@ export async function obterDiaMaisMenosPeso(req, res) {
   }
 }
 
-// Validado (15/09/2025) / Validar posteriormente com mais registros
 // Buscar medições em um intervalo de datas informado pelo usuário
 export async function obterMedicoesPorPeriodo(req, res) {
   try {

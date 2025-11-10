@@ -18,10 +18,8 @@ function verificarTokenPuro(token) {
 export async function validarToken(req, res) {
   try {
     if (!await verificarToken(req)) {
-      console.log('Usuário não autenticado');
       return res.status(401).json({ error: 'Usuário não autenticado' });
     } else {
-      console.log('Token válido. Usuário autenticado');
       return res.status(200).json({ ok: true, message: 'Token válido. Usuário autenticado' });
     }
   } catch (e) {
@@ -36,7 +34,6 @@ export async function refresh(req, res) {
     const refreshToken = verificarTokenDoCorpo(req); // ← já retorna o token puro
 
     if (!refreshToken) {
-      console.log('Token de refresh não fornecido');
       return res.status(400).json({ error: 'Token de refresh não fornecido.' });
     }
 
@@ -46,19 +43,16 @@ export async function refresh(req, res) {
     });
 
     if (tokenRevogado) {
-      console.log('Token de refresh revogado');
       return res.status(401).json({ error: 'Token de refresh revogado.' });
     }
 
     // 2. Valida o token puro (sem "Bearer ")
     const token = verificarTokenPuro(refreshToken);
     if (!token) {
-      console.log('Token de refresh inválido ou expirado');
       return res.status(401).json({ error: 'Token de refresh inválido ou expirado.' });
     }
 
     if (!token.nivel || token.nivel !== 'refresh') {
-      console.log('Token de refresh com nível inválido');
       return res.status(401).json({ error: 'Token de refresh inválido' });
     }
 
@@ -76,7 +70,6 @@ export async function refresh(req, res) {
         tipo: 'iot',
       };
     } else {
-      console.log('Tipo de token de refresh inválido');
       return res.status(401).json({ error: 'Tipo de token de refresh inválido' });
     }
 
@@ -90,7 +83,6 @@ export async function refresh(req, res) {
 
   } catch (e) {
     if (e.name === 'TokenExpiredError') {
-      console.log('Token de refresh expirado');
       return res.status(401).json({ error: 'Token de refresh expirado. Por favor, faça login novamente.' });
     }
     console.error("Erro ao renovar o token:", e);

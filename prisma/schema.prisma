@@ -76,6 +76,8 @@ model Medicoes {
   mochila Mochilas  @relation(fields: [MochilaId], references: [MochilaId], onDelete: Cascade)
   usuario Usuarios  @relation(fields: [UsuarioId], references: [UsuarioId], onDelete: Cascade)
   alertas Alertas[]
+
+  @@index([UsuarioId, MochilaId, MedicaoData(sort: Desc)])
 }
 
 model Alertas {

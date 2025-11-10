@@ -1,7 +1,6 @@
-import { PrismaClient } from "@prisma/client";
 import { verificarToken } from '../utils.js';
 
-const prisma = new PrismaClient();
+import { prisma } from '../prisma.js';
 
 // Listar todos os alertas (teste, desativar depois)
 /*
