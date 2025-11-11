@@ -67,13 +67,27 @@
             padding: 2px 4px;
             border-radius: 3px;
         }
+
+        .status-code {
+            display: inline-block;
+            width: 120px;
+            font-weight: bold;
+        }
+
+        .note {
+            background-color: #fff8e1;
+            border-left: 4px solid #ffc107;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+        }
     </style>
 </head>
 
 <body>
     <h1>⚠️ API - Alertas</h1>
     <p>Esta é a documentação da API para a criação, listagem e gerenciamento de alertas relacionados às medições de
-        mochilas. Todas as rotas de gerenciamento de alertas agora exigem autenticação de usuário via token JWT.</p>
+        mochilas. Todas as rotas de gerenciamento de alertas exigem autenticação de usuário via token JWT.</p>
 
     <div class="section" id="endpoints">
         <h2>🔗 Endpoints</h2>
@@ -83,17 +97,22 @@
         <ul>
             <li><a href="#get-id">GET - /alertas/:id</a> - Obter alerta por ID</li>
             <li><a href="#put-atualizar">PUT - /alertas/:id</a> - Atualizar alerta (alterar status)</li>
-            <li><a href="#get-usuario">POST - /alertas/usuario</a> - Listar alertas do usuário</li>
+            <li><a href="#get-usuario">GET - /alertas/usuario/:status</a> - Listar alertas do usuário por status</li>
             <li><a href="#delete-id">DELETE - /alertas/:id</a> - Deletar alerta</li>
         </ul>
     </div>
 
     <div class="section" id="autenticacao">
         <h2>🔒 Autenticação</h2>
-        <p>A maioria dos endpoints desta API requer autenticação de sessão via <strong>JSON Web Token (JWT)</strong>. O
+        <p>Todos os endpoints desta API requerem autenticação de sessão via <strong>JSON Web Token (JWT)</strong>. O
             token deve ser enviado no cabeçalho (header) da requisição, utilizando o esquema <code>Bearer</code>.</p>
         <h3>Exemplo de Header de Requisição:</h3>
         <pre>Authorization: Bearer &lt;seu_token_aqui&gt;</pre>
+        
+        <div class="auth-info">
+            <h4>⚠️ Nota Importante:</h4>
+            <p>Todas as rotas são restritas apenas para usuários com <code>tipo === 'usuario'</code>. Tokens de outros tipos de usuário retornarão erro 403.</p>
+        </div>
     </div>
 
     <div class="section" id="get-id">
@@ -104,12 +123,12 @@
         <pre>/alertas/456</pre>
         <h3>Respostas:</h3>
         <ul>
-            <li>`200 OK`: Retorna o objeto do alerta.</li>
-            <li>`400 Bad Request`: `{ "error": "ID do alerta inválido" }`</li>
-            <li>`401 Unauthorized`: `{ "error": "Usuário não autenticado" }`</li>
-            <li>`403 Forbidden`: `{ "error": "Token inválido para usuário" }`</li>
-            <li>`404 Not Found`: `{ "error": "Alerta não encontrado" }` ou `{ "error": "Usuário não encontrado" }`</li>
-            <li>`500 Internal Server Error`: `{ "error": "Erro ao obter alerta" }`</li>
+            <li><span class="status-code">200 OK:</span> Retorna o objeto do alerta.</li>
+            <li><span class="status-code">400 Bad Request:</span> <code>{ "error": "ID do alerta inválido" }</code> ou <code>{ "error": "ID do usuário inválido" }</code></li>
+            <li><span class="status-code">401 Unauthorized:</span> <code>{ "error": "Usuário não autenticado" }</code></li>
+            <li><span class="status-code">403 Forbidden:</span> <code>{ "error": "Token inválido para usuário" }</code></li>
+            <li><span class="status-code">404 Not Found:</span> <code>{ "error": "Alerta não encontrado" }</code> ou <code>{ "error": "Usuário não encontrado" }</code></li>
+            <li><span class="status-code">500 Internal Server Error:</span> <code>{ "error": "Erro ao obter alerta" }</code></li>
         </ul>
         <a href="#endpoints" class="back-link">⬅ Voltar para Endpoints</a>
     </div>
@@ -124,15 +143,17 @@
         <pre>{
     "AlertaStatus": "Lido"
 }</pre>
+        <div class="note">
+            <strong>Valores válidos para AlertaStatus:</strong> "Enviar", "Enviado", "Lido"
+        </div>
         <h3>Respostas:</h3>
         <ul>
-            <li>`200 OK`: `{ "ok": true, "message": "Alerta atualizado com sucesso" }`</li>
-            <li>`400 Bad Request`: `{ "error": "ID do alerta inválido" }` ou `{ "error": "Status de alerta inválido" }`
-            </li>
-            <li>`401 Unauthorized`: `{ "error": "Usuário não autenticado" }`</li>
-            <li>`403 Forbidden`: `{ "error": "Token inválido para usuário" }`</li>
-            <li>`404 Not Found`: `{ "error": "Alerta não encontrado" }` ou `{ "error": "Usuário não encontrado" }`</li>
-            <li>`500 Internal Server Error`: `{ "error": "Erro ao atualizar alerta" }`</li>
+            <li><span class="status-code">200 OK:</span> <code>{ "ok": true, "message": "Alerta atualizado com sucesso" }</code></li>
+            <li><span class="status-code">400 Bad Request:</span> <code>{ "error": "ID do alerta inválido" }</code>, <code>{ "error": "ID do usuário inválido" }</code> ou <code>{ "error": "Status de alerta inválido. Deve ser 'Enviar', 'Enviado' ou 'Lido'" }</code></li>
+            <li><span class="status-code">401 Unauthorized:</span> <code>{ "error": "Usuário não autenticado" }</code></li>
+            <li><span class="status-code">403 Forbidden:</span> <code>{ "error": "Token inválido para usuário" }</code></li>
+            <li><span class="status-code">404 Not Found:</span> <code>{ "error": "Alerta não encontrado" }</code> ou <code>{ "error": "Usuário não encontrado" }</code></li>
+            <li><span class="status-code">500 Internal Server Error:</span> <code>{ "error": "Erro ao atualizar alerta" }</code></li>
         </ul>
         <a href="#endpoints" class="back-link">⬅ Voltar para Endpoints</a>
     </div>
@@ -141,37 +162,37 @@
         <h2>👤 GET - /alertas/usuario/:status</h2>
         <p>Lista todos os alertas de um usuário logado, filtrados pelo status informado. Requer <a href="#autenticacao">autenticação</a>.
         </p>
-        <h3>Corpo da requisição:</h3>
-        <pre>{
-    "AlertaStatus": "Lido"
-}</pre>
+        <h3>Parâmetros de URL:</h3>
+        <pre>/alertas/usuario/Lido</pre>
+        <div class="note">
+            <strong>Valores válidos para status:</strong> "Enviar", "Enviado", "Lido"
+        </div>
         <h3>Respostas:</h3>
         <ul>
-            <li>`200 OK`: Retorna um array de alertas do usuário.</li>
-            <li>`400 Bad Request`: `{ "error": "Status de alerta inválido. Deve ser 'Enviar', 'Enviado' ou 'Lido'" }`
-            </li>
-            <li>`401 Unauthorized`: `{ "error": "Usuário não autenticado" }`</li>
-            <li>`403 Forbidden`: `{ "error": "Token inválido para usuário" }`</li>
-            <li>`404 Not Found`: `{ "error": "Usuário não encontrado" }`</li>
-            <li>`500 Internal Server Error`: `{ "error": "Erro ao listar alertas" }`</li>
+            <li><span class="status-code">200 OK:</span> Retorna um array de alertas do usuário, ordenados por data (ascendente).</li>
+            <li><span class="status-code">400 Bad Request:</span> <code>{ "error": "Status de alerta inválido. Deve ser 'Enviar', 'Enviado' ou 'Lido'" }</code></li>
+            <li><span class="status-code">401 Unauthorized:</span> <code>{ "error": "Usuário não autenticado" }</code></li>
+            <li><span class="status-code">403 Forbidden:</span> <code>{ "error": "Token inválido para usuário" }</code></li>
+            <li><span class="status-code">404 Not Found:</span> <code>{ "error": "Usuário não encontrado" }</code></li>
+            <li><span class="status-code">500 Internal Server Error:</span> <code>{ "error": "Erro ao listar alertas" }</code></li>
         </ul>
         <a href="#endpoints" class="back-link">⬅ Voltar para Endpoints</a>
     </div>
 
     <div class="section" id="delete-id">
-        <h2>❌ DELETE /alertas/:id</h2>
+        <h2>❌ DELETE - /alertas/:id</h2>
         <p>Deleta um alerta específico pelo seu ID. Requer <a href="#autenticacao">autenticação</a>, garantindo que apenas o
             dono do alerta possa deletá-lo.</p>
         <h3>Parâmetros de URL:</h3>
         <pre>/alertas/456</pre>
         <h3>Respostas:</h3>
         <ul>
-            <li>`200 OK`: `{ "ok": true, "message": "Alerta deletado com sucesso" }`</li>
-            <li>`400 Bad Request`: `{ "error": "ID do alerta inválido" }`</li>
-            <li>`401 Unauthorized`: `{ "error": "Usuário não autenticado" }`</li>
-            <li>`403 Forbidden`: `{ "error": "Token inválido para usuário" }`</li>
-            <li>`404 Not Found`: `{ "error": "Alerta não encontrado" }` ou `{ "error": "Usuário não encontrado" }`</li>
-            <li>`500 Internal Server Error`: `{ "error": "Erro ao deletar alerta" }`</li>
+            <li><span class="status-code">200 OK:</span> <code>{ "ok": true, "message": "Alerta deletado com sucesso" }</code></li>
+            <li><span class="status-code">400 Bad Request:</span> <code>{ "error": "ID do alerta inválido" }</code> ou <code>{ "error": "ID do usuário inválido" }</code></li>
+            <li><span class="status-code">401 Unauthorized:</span> <code>{ "error": "Usuário não autenticado" }</code></li>
+            <li><span class="status-code">403 Forbidden:</span> <code>{ "error": "Token inválido para usuário" }</code></li>
+            <li><span class="status-code">404 Not Found:</span> <code>{ "error": "Alerta não encontrado" }</code> ou <code>{ "error": "Usuário não encontrado" }</code></li>
+            <li><span class="status-code">500 Internal Server Error:</span> <code>{ "error": "Erro ao deletar alerta" }</code></li>
         </ul>
         <a href="#endpoints" class="back-link">⬅ Voltar para Endpoints</a>
     </div>

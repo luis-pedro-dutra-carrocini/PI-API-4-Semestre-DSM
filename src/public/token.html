@@ -48,6 +48,28 @@
             margin-top: 10px;
             font-size: 0.9em;
         }
+
+        .status-code {
+            display: inline-block;
+            width: 120px;
+            font-weight: bold;
+        }
+
+        .note {
+            background-color: #fff8e1;
+            border-left: 4px solid #ffc107;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+        }
+
+        .auth-info {
+            background-color: #e6f7ff;
+            border-left: 4px solid #3399ff;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 4px;
+        }
     </style>
 </head>
 
@@ -61,8 +83,8 @@
             <li><a href="index.html">Voltar ao Menu</a></li>
         </ul>
         <ul>
-            <li><a href="#get-validar">GET - /validarToken/</a> - Validar Token</li>
-            <li><a href="#post-refresh">POST - /refresh/</a> - Renovar Token de Acesso</li>
+            <li><a href="#post-validar">POST - /token/validarToken/</a> - Validar Token</li>
+            <li><a href="#post-refresh">POST - /token/refresh/</a> - Renovar Token de Acesso</li>
         </ul>
     </div>
 
@@ -71,42 +93,86 @@
         <p>A maioria dos endpoints desta API requer autenticação via <strong>JSON Web Token (JWT)</strong>. O token deve ser enviado no cabeçalho (header) da requisição, utilizando o esquema <code>Bearer</code>.</p>
         <h3>Exemplo de Header de Requisição:</h3>
         <pre>Authorization: Bearer &lt;seu_token_aqui&gt;</pre>
+        
+        <div class="auth-info">
+            <h4>⚠️ Nota Importante:</h4>
+            <p>A rota <strong>POST /token/refresh/</strong> requer o refresh token no corpo da requisição, enquanto a rota <strong>POST /token/validarToken/</strong> requer o access token no cabeçalho.</p>
+        </div>
     </div>
 
-    <div class="section" id="get-validar">
-        <h2>✔️ POST - /validarToken/</h2>
+    <div class="section" id="post-validar">
+        <h2>✔️ POST - /token/validarToken/</h2>
         <p>Verifica a validade do token de acesso (access token) enviado no cabeçalho da requisição. Este endpoint não renova o token, apenas informa se ele ainda é válido.</p>
+        
+        <div class="note">
+            <strong>⚠️ Método HTTP:</strong> Esta rota é <strong>POST</strong>, não GET como indicado anteriormente.
+        </div>
+        
+        <h3>Cabeçalho da requisição:</h3>
+        <pre>Authorization: Bearer &lt;access_token&gt;</pre>
+        
         <h3>Corpo da requisição:</h3>
         <p>Não há corpo de requisição.</p>
+        
+        <h3>Resposta de Sucesso (200 OK):</h3>
+        <pre>{
+    "ok": true,
+    "message": "Token válido. Usuário autenticado"
+}</pre>
+        
         <h3>Respostas:</h3>
         <ul>
-            <li>`200 OK`: `{ "ok": true, "message": "Token válido. Usuário autenticado" }`</li>
-            <li>`401 Unauthorized`: `{ "error": "Usuário não autenticado" }` (o token está ausente, é inválido ou expirou)</li>
-            <li>`500 Internal Server Error`: `{ "error": "Erro ao validar o token" }`</li>
+            <li><span class="status-code">200 OK:</span> Token válido e usuário autenticado</li>
+            <li><span class="status-code">401 Unauthorized:</span> <code>{ "error": "Usuário não autenticado" }</code> (o token está ausente, é inválido ou expirou)</li>
+            <li><span class="status-code">500 Internal Server Error:</span> <code>{ "error": "Erro ao validar token" }</code></li>
         </ul>
         <a href="#endpoints" class="back-link">⬅ Voltar para Endpoints</a>
     </div>
 
     <div class="section" id="post-refresh">
-        <h2>🔄 POST - /refresh/</h2>
+        <h2>🔄 POST - /token/refresh/</h2>
         <p>Renova o token de acesso (access token) usando um token de refresh (refresh token). Este endpoint deve ser usado quando o access token expirar para obter um novo, evitando a necessidade de um novo login.</p>
+        
+        <div class="note">
+            <strong>⚠️ Tipos Suportados:</strong> Funciona tanto para tokens de usuário (<code>tipo: 'usuario'</code>) quanto para tokens de mochila IoT (<code>tipo: 'iot'</code>).
+        </div>
+        
         <h3>Corpo da requisição:</h3>
         <pre>{
-    "refreshToken": "eyJ..."
+    "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
 }</pre>
-        <h3>Respostas:</h3>
-        <ul>
-            <li>`200 OK`: Retorna um novo token de acesso.
-                <pre>{
+        
+        <h3>Resposta de Sucesso (200 OK):</h3>
+        <pre>{
     "ok": true,
     "message": "Access token renovado com sucesso.",
-    "accessToken": "eyJh..."
+    "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
 }</pre>
+        
+        <h3>Respostas:</h3>
+        <ul>
+            <li><span class="status-code">200 OK:</span> Retorna um novo token de acesso (expira em 15 minutos)</li>
+            <li><span class="status-code">400 Bad Request:</span> <code>{ "error": "Token de refresh não fornecido." }</code></li>
+            <li><span class="status-code">401 Unauthorized:</span> 
+                <ul>
+                    <li><code>{ "error": "Token de refresh revogado." }</code></li>
+                    <li><code>{ "error": "Token de refresh inválido ou expirado." }</code></li>
+                    <li><code>{ "error": "Token de refresh expirado. Por favor, faça login novamente." }</code></li>
+                    <li><code>{ "error": "Token de refresh inválido" }</code> (quando falta o nível 'refresh')</li>
+                    <li><code>{ "error": "Tipo de token de refresh inválido" }</code></li>
+                </ul>
             </li>
-            <li>`400 Bad Request`: `{ "error": "Token de refresh não fornecido." }`</li>
-            <li>`401 Unauthorized`: `{ "error": "Token de refresh revogado." }`, `{ "error": "Token de refresh expirado. Por favor, faça login novamente." }` ou `{ "error": "Token de refresh inválido." }`</li>
-            <li>`500 Internal Server Error`: `{ "error": "Erro ao renovar o token" }`</li>
         </ul>
+        
+        <div class="note">
+            <strong>Características do Novo Access Token:</strong>
+            <ul>
+                <li>Expira em <strong>15 minutos</strong></li>
+                <li>Mantém o mesmo tipo (usuário ou IoT) do refresh token</li>
+                <li>Não inclui o nível 'refresh' (apenas para acesso)</li>
+            </ul>
+        </div>
+        
         <a href="#endpoints" class="back-link">⬅ Voltar para Endpoints</a>
     </div>
 
