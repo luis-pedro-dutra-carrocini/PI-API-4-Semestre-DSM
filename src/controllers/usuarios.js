@@ -47,12 +47,16 @@ export async function criarUsuario(req, res) {
             return res.status(409).json({ error: "Peso não pode ser nulo" });
         } else if (UsuarioPeso < 9) {
             return res.status(409).json({ error: "Peso mínimo para se carregar uma mochila é de 9kg" });
+        } else if (UsuarioPeso > 999.99) {
+            return res.status(409).json({ error: "Peso máximo excedido" });
         }
 
         if (!UsuarioAltura) {
             return res.status(409).json({ error: "Altura não pode ser nula" });
         } else if (UsuarioAltura < 0.80) {
             return res.status(409).json({ error: "Altura mínima para se carregar uma mochila é de 80cm / 0,80 metros" });
+        } else if (UsuarioAltura > 4.0) {
+            return res.status(409).json({ error: "Altura máxima excedida" });
         }
 
         if (!UsuarioSexo || UsuarioSexo.trim() === "") {

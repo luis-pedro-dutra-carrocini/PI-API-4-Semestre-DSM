@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { criarMedicao, obterRelatorioSemanal, obterRelatorioMensal, obterRelatorioAnual, obterRelatorioDia,obterDiaMaisMenosPeso, obterMedicoesPorPeriodo, obterUltimaMedicaoMochilaUsuario, obterRelatorioGeral, obterPrevisaoPorDia } from '../controllers/medicoes.js';
+import { criarMedicao, obterRelatorioSemanal, obterRelatorioMensal, obterRelatorioAnual, obterRelatorioDia,obterDiaMaisMenosPeso, obterMedicoesPorPeriodo, obterUltimaMedicaoMochilaUsuario, obterRelatorioGeral, obterPrevisaoPorDia, criarMedicoesLote } from '../controllers/medicoes.js';
 
 const r = Router();
 
@@ -17,7 +17,7 @@ r.post('/', criarMedicao);
     "MedicaoLocal": "esquerda"
 */
 
-//r.post('/lote', criarMedicoesLote);
+r.post('/lote', criarMedicoesLote);
 
 r.get('/previsao/:mochila/:data', obterPrevisaoPorDia);
 

@@ -2,7 +2,7 @@ import { prisma } from '../prisma.js';
 import { roundTo2, verificarToken, calcularEstatisticas, calcularRegressaoLinear, processarMedicoes, calcularTotaisBrutosParaEstatisticas, calcularValoresParaRegressao, groupByWeekday } from '../utils.js';
 
 // Rota para criar medições em lote, para popular o banco de dados (Desativar após uso)
-/*
+
 export async function criarMedicoesLote(req, res) {
   try {
     const { medicoes } = req.body;
@@ -118,7 +118,7 @@ export async function criarMedicoesLote(req, res) {
     return res.status(500).json({ error: "Erro ao registrar medições em lote" });
   }
 }
-*/
+
 
 // Validado (15/09/2025) - Criar medição (IoT)
 export async function criarMedicao(req, res) {
@@ -146,7 +146,7 @@ export async function criarMedicao(req, res) {
     const mId = mochila.MochilaId;
 
     let pesoNormalizado;
-    if (!MedicaoPeso || isNaN(MedicaoPeso)) {
+    if (MedicaoPeso == null || MedicaoPeso === '' || isNaN(MedicaoPeso)) {
       return res.status(400).json({ error: 'Peso é obrigatório' });
     } else if (MedicaoPeso < 0) {
       return res.status(400).json({ error: 'Peso da medição deve ser maior ou igual a zero' });
@@ -533,7 +533,7 @@ export async function obterPrevisaoPorDia(req, res) {
       usuario = await verificarToken(req);
     }
 
-    
+
     const UsuarioId = Number(usuario.UsuarioId);
 
     if (!usuario.tipo || usuario.tipo !== 'usuario') {
@@ -544,7 +544,7 @@ export async function obterPrevisaoPorDia(req, res) {
       return res.status(400).json({ error: "ID do usuário inválido" });
     }
 
-    
+
     const dadosusuario = await prisma.usuarios.findUnique({ where: { UsuarioId: UsuarioId } });
 
     if (!dadosusuario) {
@@ -554,19 +554,19 @@ export async function obterPrevisaoPorDia(req, res) {
     const MochilaCodigo = req.params.mochila;
     const dataAlvo = new Date(req.params.data);
 
-    
+
     if (!MochilaCodigo || MochilaCodigo.trim() === '') {
       return res.status(400).json({ error: "Informe o código da mochila" });
     }
 
-    
+
     if (!dataAlvo || isNaN(dataAlvo.getTime())) {
       return res.status(400).json({ error: "Data inválida" });
     }
 
     const mochila = await prisma.mochilas.findUnique({ where: { MochilaCodigo: MochilaCodigo } });
 
-    
+
     if (!mochila) {
       return res.status(404).json({ error: 'Mochila não encontrado' });
     }
@@ -579,7 +579,7 @@ export async function obterPrevisaoPorDia(req, res) {
       }
     });
 
-    
+
     if (!usuarioMochila) {
       return res.status(404).json({ error: 'Usuário não está vinculado a esta mochila' });
     }
@@ -599,9 +599,9 @@ export async function obterPrevisaoPorDia(req, res) {
       orderBy: { MedicaoData: 'asc' }
     });
 
-    
+
     if (medicoes.length === 0) {
-      return res.status(404).json({ 
+      return res.status(404).json({
         error: 'Nenhuma medição encontrada',
         previsao: null,
         estatisticas: null,
@@ -612,8 +612,8 @@ export async function obterPrevisaoPorDia(req, res) {
     // 🟢 CORREÇÃO: Determina o dia da semana da data alvo (0=Domingo ... 6=Sábado)
     // Usando UTC para evitar problemas de timezone
     const weekdayEscolhido = dataAlvo.getUTCDay();
-   
-    
+
+
     // 🟢 CORREÇÃO: Filtra todas as medições que têm o mesmo dia da semana (usando UTC)
     const medicoesMesmoWeekday = medicoes.filter((m) => {
       const d = new Date(m.MedicaoData);
@@ -621,16 +621,16 @@ export async function obterPrevisaoPorDia(req, res) {
       return diaMedicao === weekdayEscolhido;
     });
 
-    
-    
+
+
     // 🟢 DEBUG: Mostrar os dias das primeiras medições
-    
+
     medicoes.slice(0, 10).forEach((m, i) => {
       const d = new Date(m.MedicaoData);
     });
 
-    
-    
+
+
     if (medicoesMesmoWeekday.length === 0) {
       return res.status(200).json({
         previsao: null,
@@ -651,8 +651,8 @@ export async function obterPrevisaoPorDia(req, res) {
       mapaPorData[key].push(m);
     });
 
-    
-    
+
+
 
     // Para cada data: agrupar por hora:minuto e calcular média esquerda/direita
     const totaisPorDia = Object.entries(mapaPorData).map(([dataStr, lista]) => {
@@ -669,16 +669,16 @@ export async function obterPrevisaoPorDia(req, res) {
 
       // Para cada hora:minuto, calcular média das medições esquerda/direita
       const mediasHorarias = Object.values(mapaHoraMin).map((arr) => {
-        const esquerda = arr.filter((v) => 
-          v.MedicaoLocal?.toLowerCase().includes("esquerda") || 
+        const esquerda = arr.filter((v) =>
+          v.MedicaoLocal?.toLowerCase().includes("esquerda") ||
           v.MedicaoLocal?.toLowerCase().includes("esq")
         );
-        const direita = arr.filter((v) => 
-          v.MedicaoLocal?.toLowerCase().includes("direita") || 
+        const direita = arr.filter((v) =>
+          v.MedicaoLocal?.toLowerCase().includes("direita") ||
           v.MedicaoLocal?.toLowerCase().includes("dir")
         );
-        const ambos = arr.filter((v) => 
-          v.MedicaoLocal?.toLowerCase().includes("ambos") || 
+        const ambos = arr.filter((v) =>
+          v.MedicaoLocal?.toLowerCase().includes("ambos") ||
           v.MedicaoLocal?.toLowerCase().includes("centro")
         );
 
@@ -704,16 +704,16 @@ export async function obterPrevisaoPorDia(req, res) {
       });
 
       // Média do dia = soma das médias horárias ÷ quantidade de horários com medição
-      const mediaDia = mediasHorarias.length > 0 
-        ? mediasHorarias.reduce((a, b) => a + b, 0) / mediasHorarias.length 
+      const mediaDia = mediasHorarias.length > 0
+        ? mediasHorarias.reduce((a, b) => a + b, 0) / mediasHorarias.length
         : 0;
 
       return roundTo2(mediaDia);
     }).filter(val => val > 0); // Remove dias com média zero
 
-    
-    
-    
+
+
+
     // Calcular estatísticas
     if (totaisPorDia.length <= 1) {
       const statsParciais = calcularEstatisticas(totaisPorDia);
@@ -733,8 +733,8 @@ export async function obterPrevisaoPorDia(req, res) {
       totalMedicoes: totaisPorDia.length
     };
 
-    
-    
+
+
     // Critério de validade: assimetria populacional em módulo <= 1
     const skew = estatisticas?.assimetria ?? 0;
     if (Math.abs(skew) > 1) {
@@ -836,7 +836,7 @@ export async function obterRelatorioGeral(req, res) {
         return acc + (Number.isFinite(peso) ? peso : 0);
       }, 0)
     );
-    const totalMedicoesBrutas = (medicoes.length)/2;
+    const totalMedicoesBrutas = (medicoes.length) / 2;
 
 
     // --- 3. CALCULAR ESTATÍSTICAS (Baseadas na Amostra Agregada por Minuto) ---
